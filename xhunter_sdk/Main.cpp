@@ -1,5 +1,5 @@
-#include <phnt/phnt_windows.h>
-#include <phnt/phnt.h>
+#include <phnt_windows.h>
+#include <phnt.h>
 
 #include <stdio.h>
 #include <conio.h>

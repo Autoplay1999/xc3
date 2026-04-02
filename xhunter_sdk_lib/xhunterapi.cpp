@@ -1,5 +1,5 @@
-#include <phnt/phnt_windows.h>
-#include <phnt/phnt.h>
+#include <phnt_windows.h>
+#include <phnt.h>
 
 #include <stdio.h>
 #include <conio.h>
@@ -11,10 +11,10 @@
 #include <memory>
 #include <functional>
 
-#include <xorstr/xorstr.hpp>
+#include <xorstr.hpp>
 #include <vmp/VMProtectSDK.h>
+#include <nirvana/std_format_ext.h>
 #include <misc/crypto.h>
-#include <misc/stl_format.h>
 
 #include "util.hpp"
 

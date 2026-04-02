@@ -4,20 +4,40 @@
 #ifndef XHUNTER_API_H
 #define XHUNTER_API_H
 
-#define ZXTF_PID_ALLOW			1
-#define ZXTF_PID_DENY			2
-#define ZXTF_PID_UNPROTECT		4
-#define ZXTF_PID_PROTECTED		8
-
-#define ZXTF_PID_REPORT_AUTHENTICATED 0x40000000
-#define ZXTF_PID_REPORT_PROCESS 0x80000000
-
-#define STATUS_SUCCESS ((NTSTATUS)0x00000000L)
-
+#include <Windows.h>
 #include <stdint.h>
+#include <memory>
+#include <optional>
+#include <string>
+
+#ifndef STATUS_SUCCESS
+#define STATUS_SUCCESS ((NTSTATUS)0x00000000L)
+#endif
 
 namespace xhunterapi
 {
+	enum class PidFlag : uint32_t {
+		Allow = 1,
+		Deny = 2,
+		Unprotect = 4,
+		Protected = 8,
+		ReportAuthenticated = 0x40000000,
+		ReportProcess = 0x80000000
+	};
+
+	inline PidFlag operator|(PidFlag a, PidFlag b) {
+		return static_cast<PidFlag>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+	}
+
+	enum class Opcode : uint32_t {
+		MapPid = 775,
+		RegisterReportReader = 777,
+		UnmapPid = 779,
+		SetHookState = 782,
+		OpenProcess = 785,
+		GetProtectFlag = 797
+	};
+
 #pragma pack(push, 1)
 	struct ObjectHandleInfo
 	{
@@ -92,19 +112,51 @@ namespace xhunterapi
 
 #pragma pack(pop)
 
-	//Functions
-	HANDLE get_xhunter1_handle()noexcept;
-	HANDLE XOpenProcess(HANDLE hDriver, DWORD dwProcessId, DWORD dwDesiredAccess)noexcept;
-	VOID StartHandleHook(HANDLE hDriver)noexcept;
-	VOID StopHandleHook(HANDLE hDriver)noexcept;
-	VOID RegisterPid(HANDLE hDriver, DWORD dwPid, ULONG dwFlag)noexcept;
-	VOID UnregisterPid(HANDLE hDriver, DWORD dwPid)noexcept;
-	DWORD GetProtectedProcessFlag(HANDLE hDriver, DWORD dwPid)noexcept;
-	VOID XRegisterReportReader(HANDLE hDriver)noexcept;
+	template<typename T>
+	struct ApiResult {
+		NTSTATUS status;
+		std::optional<T> value;
 
-	int get_last_error()noexcept;
+		bool is_success() const { return status == STATUS_SUCCESS && value.has_value(); }
+	};
 
-	bool is_xhunter_running() noexcept;
+	struct VoidResult {
+		NTSTATUS status;
+
+		bool is_success() const { return status == STATUS_SUCCESS; }
+	};
+
+	class XHunterClient {
+	public:
+		XHunterClient();
+		~XHunterClient();
+
+		// Prevent copying
+		XHunterClient(const XHunterClient&) = delete;
+		XHunterClient& operator=(const XHunterClient&) = delete;
+
+		// Connection / Lifecycle Methods
+		bool Connect() noexcept;
+		void Disconnect() noexcept;
+		bool IsRunning() const noexcept;
+		int GetLastError() const noexcept;
+
+		// API Methods
+		ApiResult<HANDLE> OpenProcess(DWORD dwProcessId, DWORD dwDesiredAccess) noexcept;
+		VoidResult StartHandleHook() noexcept;
+		VoidResult StopHandleHook() noexcept;
+		VoidResult RegisterPid(DWORD dwPid, PidFlag flag) noexcept;
+		VoidResult UnregisterPid(DWORD dwPid) noexcept;
+		ApiResult<DWORD> GetProtectedProcessFlag(DWORD dwPid) noexcept;
+		VoidResult RegisterReportReader() noexcept;
+
+	private:
+		HANDLE m_hDriver;
+		int m_lastError;
+		bool m_selfRun;
+
+		std::unique_ptr<xhunter1_common_res> SendPacket(Opcode opcode, const void* body, size_t body_len) noexcept;
+	};
 }
 
 #endif

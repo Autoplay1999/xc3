@@ -8,6 +8,103 @@
 #endif
 
 namespace util {
+    // Service Management Utilities
+    inline bool is_service_running(const std::wstring& name) noexcept {
+        SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+        if (!scManager) return false;
+
+        SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_QUERY_STATUS);
+        if (!service) {
+            CloseServiceHandle(scManager);
+            return false;
+        }
+
+        SERVICE_STATUS_PROCESS status;
+        DWORD bytesNeeded;
+        bool running = false;
+
+        if (QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO, (LPBYTE)&status, sizeof(status), &bytesNeeded)) {
+            running = (status.dwCurrentState == SERVICE_RUNNING);
+        }
+
+        CloseServiceHandle(service);
+        CloseServiceHandle(scManager);
+
+        return running;
+    }
+
+    inline bool service_exists(const std::wstring& name) noexcept {
+        SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+        if (!scManager) return false;
+
+        SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_QUERY_STATUS);
+        bool exists = service != nullptr;
+
+        if (service) CloseServiceHandle(service);
+        CloseServiceHandle(scManager);
+
+        return exists;
+    }
+
+    inline bool create_service_entry(const std::wstring& name, const std::wstring& displayName, const std::wstring& binaryPath) noexcept {
+        SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CREATE_SERVICE);
+        if (!scManager) return false;
+
+        SC_HANDLE service = CreateService(
+            scManager,
+            name.c_str(),
+            displayName.c_str(),
+            SERVICE_ALL_ACCESS,
+            SERVICE_KERNEL_DRIVER,
+            SERVICE_DEMAND_START,
+            SERVICE_ERROR_NORMAL,
+            binaryPath.c_str(),
+            nullptr, nullptr, nullptr, nullptr, nullptr);
+
+        if (!service) {
+            CloseServiceHandle(scManager);
+            return false;
+        }
+
+        CloseServiceHandle(service);
+        CloseServiceHandle(scManager);
+        return true;
+    }
+
+    inline bool start_service_entry(const std::wstring& name) noexcept {
+        SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+        if (!scManager) return false;
+
+        SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_START);
+        if (!service) {
+            CloseServiceHandle(scManager);
+            return false;
+        }
+
+        bool success = StartService(service, 0, nullptr);
+
+        CloseServiceHandle(service);
+        CloseServiceHandle(scManager);
+        return success;
+    }
+
+    inline bool stop_service_entry(const std::wstring& name) noexcept {
+        SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+        if (!scManager) return false;
+
+        SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_STOP | SERVICE_QUERY_STATUS);
+        if (!service) {
+            CloseServiceHandle(scManager);
+            return false;
+        }
+
+        SERVICE_STATUS status;
+        bool success = ControlService(service, SERVICE_CONTROL_STOP, &status);
+
+        CloseServiceHandle(service);
+        CloseServiceHandle(scManager);
+        return success;
+    }
     typedef struct _OBJSCANPARAM {
         PCWSTR Buffer;
         ULONG BufferSize;

@@ -160,12 +160,7 @@ namespace xhunterapi
 
 		std::unique_ptr<xhunter1_common_res> SendPacket(Opcode opcode, const void* body, size_t body_len) noexcept;
 
-		// Service Management Helpers (DRY)
-		bool IsServiceRunning(const std::wstring& name) const noexcept;
-		bool ServiceExists(const std::wstring& name) const noexcept;
-		bool CreateServiceEntry(const std::wstring& name, const std::wstring& displayName, const std::wstring& binaryPath) const noexcept;
-		bool StartServiceEntry(const std::wstring& name) const noexcept;
-		bool StopServiceEntry(const std::wstring& name) const noexcept;
+		// Utility Helpers
 		bool ExportDriver(const std::wstring& path) const noexcept;
 	};
 }

@@ -44,7 +44,7 @@ namespace xhunterapi {
 	}
 
 	bool XHunterClient::IsRunning() const noexcept {
-		return IsServiceRunning(m_serviceName);
+		return util::is_service_running(m_serviceName);
 	}
 
 	void XHunterClient::Disconnect() noexcept {
@@ -54,7 +54,7 @@ namespace xhunterapi {
 		}
 
 		if (m_selfRun) {
-			StopServiceEntry(m_serviceName);
+			util::stop_service_entry(m_serviceName);
 			m_selfRun = false;
 		}
 	}
@@ -66,8 +66,8 @@ namespace xhunterapi {
 			return true;
 		}
 
-		if (!ServiceExists(m_serviceName)) {
-			if (!CreateServiceEntry(m_serviceName, m_serviceName, m_driverPath)) {
+		if (!util::service_exists(m_serviceName)) {
+			if (!util::create_service_entry(m_serviceName, m_serviceName, m_driverPath)) {
 				m_lastError = 1;
 				return false;
 			}
@@ -77,14 +77,14 @@ namespace xhunterapi {
 				return false;
 			}
 
-			if (!StartServiceEntry(m_serviceName)) {
+			if (!util::start_service_entry(m_serviceName)) {
 				m_lastError = 3;
 				return false;
 			}
 
 			m_selfRun = true;
 		} else {
-			if (!IsServiceRunning(m_serviceName)) {
+			if (!util::is_service_running(m_serviceName)) {
 				std::ifstream f(m_driverPath, std::ios::binary);
 
 				while (!f.is_open()) {
@@ -93,7 +93,7 @@ namespace xhunterapi {
 						return false;
 					}
 
-					if (!StartServiceEntry(m_serviceName)) {
+					if (!util::start_service_entry(m_serviceName)) {
 						m_lastError = 7;
 						return false;
 					}
@@ -120,7 +120,7 @@ namespace xhunterapi {
 					}
 				}
 
-				if (!StartServiceEntry(m_serviceName)) {
+				if (!util::start_service_entry(m_serviceName)) {
 					m_lastError = 6;
 					return false;
 				}
@@ -140,102 +140,7 @@ namespace xhunterapi {
 		return true;
 	}
 
-	bool XHunterClient::IsServiceRunning(const std::wstring& name) const noexcept {
-		SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
-		if (!scManager) return false;
 
-		SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_QUERY_STATUS);
-		if (!service) {
-			CloseServiceHandle(scManager);
-			return false;
-		}
-
-		SERVICE_STATUS_PROCESS status;
-		DWORD bytesNeeded;
-		bool running = false;
-
-		if (QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO, (LPBYTE)&status, sizeof(status), &bytesNeeded)) {
-			running = (status.dwCurrentState == SERVICE_RUNNING);
-		}
-
-		CloseServiceHandle(service);
-		CloseServiceHandle(scManager);
-
-		return running;
-	}
-
-	bool XHunterClient::ServiceExists(const std::wstring& name) const noexcept {
-		SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
-		if (!scManager) return false;
-
-		SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_QUERY_STATUS);
-		bool exists = service != nullptr;
-
-		if (service) CloseServiceHandle(service);
-		CloseServiceHandle(scManager);
-
-		return exists;
-	}
-
-	bool XHunterClient::CreateServiceEntry(const std::wstring& name, const std::wstring& displayName, const std::wstring& binaryPath) const noexcept {
-		SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CREATE_SERVICE);
-		if (!scManager) return false;
-
-		SC_HANDLE service = CreateService(
-			scManager,
-			name.c_str(),
-			displayName.c_str(),
-			SERVICE_ALL_ACCESS,
-			SERVICE_KERNEL_DRIVER,
-			SERVICE_DEMAND_START,
-			SERVICE_ERROR_NORMAL,
-			binaryPath.c_str(),
-			nullptr, nullptr, nullptr, nullptr, nullptr);
-
-		if (!service) {
-			CloseServiceHandle(scManager);
-			return false;
-		}
-
-		CloseServiceHandle(service);
-		CloseServiceHandle(scManager);
-		return true;
-	}
-
-	bool XHunterClient::StartServiceEntry(const std::wstring& name) const noexcept {
-		SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
-		if (!scManager) return false;
-
-		SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_START);
-		if (!service) {
-			CloseServiceHandle(scManager);
-			return false;
-		}
-
-		bool success = StartService(service, 0, nullptr);
-
-		CloseServiceHandle(service);
-		CloseServiceHandle(scManager);
-		return success;
-	}
-
-	bool XHunterClient::StopServiceEntry(const std::wstring& name) const noexcept {
-		SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
-		if (!scManager) return false;
-
-		SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_STOP | SERVICE_QUERY_STATUS);
-		if (!service) {
-			CloseServiceHandle(scManager);
-			return false;
-		}
-
-		SERVICE_STATUS status;
-		bool success = ControlService(service, SERVICE_CONTROL_STOP, &status);
-
-		CloseServiceHandle(service);
-		CloseServiceHandle(scManager);
-		return success;
-	}
 
 	bool XHunterClient::ExportDriver(const std::wstring& path) const noexcept {
 		std::ofstream f(path, std::ios::binary);

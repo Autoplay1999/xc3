@@ -27,7 +27,12 @@ namespace xhunterapi {
 
 	typedef UINT(WINAPI* GETSYSTEMWOW64DIRECTORY)(LPTSTR, UINT);
 
-	XHunterClient::XHunterClient() : m_hDriver(INVALID_HANDLE_VALUE), m_lastError(0), m_selfRun(false) {
+	XHunterClient::XHunterClient() 
+		: m_hDriver(INVALID_HANDLE_VALUE), 
+		  m_lastError(0), 
+		  m_selfRun(false),
+		  m_serviceName(XSW("xhunter1")),
+		  m_driverPath(XSW("\\??\\C:\\Windows\\xhunter1.sys")) {
 	}
 
 	XHunterClient::~XHunterClient() {
@@ -39,34 +44,7 @@ namespace xhunterapi {
 	}
 
 	bool XHunterClient::IsRunning() const noexcept {
-		auto IsMyServiceRunning = [](const std::wstring& serviceName) -> bool {
-			SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
-			if (!scManager) {
-				return false;
-			}
-
-			SC_HANDLE service = OpenService(scManager, serviceName.c_str(), SERVICE_QUERY_STATUS);
-			if (!service) {
-				CloseServiceHandle(scManager);
-				return false;
-			}
-
-			SERVICE_STATUS_PROCESS status;
-			DWORD bytesNeeded;
-			bool running = false;
-
-			if (QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO, (LPBYTE)&status, sizeof(status), &bytesNeeded)) {
-				running = (status.dwCurrentState == SERVICE_RUNNING);
-			}
-
-			CloseServiceHandle(service);
-			CloseServiceHandle(scManager);
-
-			return running;
-		};
-
-		std::wstring xhunter_name = XSW("xhunter1");
-		return IsMyServiceRunning(xhunter_name);
+		return IsServiceRunning(m_serviceName);
 	}
 
 	void XHunterClient::Disconnect() noexcept {
@@ -76,164 +54,46 @@ namespace xhunterapi {
 		}
 
 		if (m_selfRun) {
-			SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
-			if (scManager) {
-				SC_HANDLE service = OpenService(scManager, XSW("xhunter1"), SERVICE_STOP | SERVICE_QUERY_STATUS);
-				if (service) {
-					SERVICE_STATUS status;
-					ControlService(service, SERVICE_CONTROL_STOP, &status);
-					CloseServiceHandle(service);
-				}
-				CloseServiceHandle(scManager);
-			}
+			StopServiceEntry(m_serviceName);
 			m_selfRun = false;
 		}
 	}
 
 	bool XHunterClient::Connect() noexcept {
-		VMP_BEGIN_MUTATION("nOTF0Goo0hpj3Oi6KL6GzjC8CVElL5lqQmRmw3oxR4FGzPyHSlC2K58o9x3KzBCD");
+		VMP_BEGIN_MUTATION(__FUNCTION__);
 
 		if (m_hDriver != INVALID_HANDLE_VALUE) {
 			return true;
 		}
 
-		auto ExportXHunter = [](std::wstring& path) -> bool {
-			std::ofstream f(path, std::ios::binary);
-
-			if (!f.is_open()) {
-				return false;
-			}
-
-			std::string dec_xhunter_data;
-			dec_xhunter_data.resize(XHUNTER1_SYS_SIZE);
-			memcpy(dec_xhunter_data.data(), XHUNTER1_SYS_DATA, XHUNTER1_SYS_SIZE);
-
-			for (size_t i = 0; i < dec_xhunter_data.size(); i++) {
-				dec_xhunter_data[i] ^= 0xFF;
-			}
-
-			f.write(dec_xhunter_data.data(), dec_xhunter_data.size());
-			return true;
-		};
-
-		auto MyServiceExists = [](const std::wstring& serviceName) -> bool {
-			SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
-			if (!scManager) {
-				return false;
-			}
-
-			SC_HANDLE service = OpenService(scManager, serviceName.c_str(), SERVICE_QUERY_STATUS);
-			bool exists = service != nullptr;
-
-			if (service) CloseServiceHandle(service);
-			CloseServiceHandle(scManager);
-
-			return exists;
-		};
-
-		auto IsMyServiceRunning = [](const std::wstring& serviceName) -> bool {
-			SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
-			if (!scManager) {
-				return false;
-			}
-
-			SC_HANDLE service = OpenService(scManager, serviceName.c_str(), SERVICE_QUERY_STATUS);
-			if (!service) {
-				CloseServiceHandle(scManager);
-				return false;
-			}
-
-			SERVICE_STATUS_PROCESS status;
-			DWORD bytesNeeded;
-			bool running = false;
-
-			if (QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO, (LPBYTE)&status, sizeof(status), &bytesNeeded)) {
-				running = (status.dwCurrentState == SERVICE_RUNNING);
-			}
-
-			CloseServiceHandle(service);
-			CloseServiceHandle(scManager);
-
-			return running;
-		};
-
-		auto CreateMyService = [](const std::wstring& serviceName, const std::wstring& displayName, const std::wstring& exePath) -> bool {
-			SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CREATE_SERVICE);
-			if (!scManager) {
-				return false;
-			}
-
-			SC_HANDLE service = CreateService(
-				scManager,
-				serviceName.c_str(),
-				displayName.c_str(),
-				SERVICE_ALL_ACCESS,
-				SERVICE_KERNEL_DRIVER,
-				SERVICE_DEMAND_START,
-				SERVICE_ERROR_NORMAL,
-				exePath.c_str(),
-				nullptr, nullptr, nullptr, nullptr, nullptr);
-
-			if (!service) {
-				CloseServiceHandle(scManager);
-				return false;
-			}
-
-			CloseServiceHandle(service);
-			CloseServiceHandle(scManager);
-			return true;
-		};
-
-		auto StartMyService = [](const std::wstring& serviceName) -> bool {
-			SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
-			if (!scManager) {
-				return false;
-			}
-
-			SC_HANDLE service = OpenService(scManager, serviceName.c_str(), SERVICE_START);
-			if (!service) {
-				CloseServiceHandle(scManager);
-				return false;
-			}
-
-			bool success = StartService(service, 0, nullptr);
-
-			CloseServiceHandle(service);
-			CloseServiceHandle(scManager);
-			return success;
-		};
-
-		std::wstring xhunter_name = XSW("xhunter1");
-		std::wstring xhunter_path = XSW("\\??\\C:\\Windows\\xhunter1.sys");
-
-		if (!MyServiceExists(xhunter_name.c_str())) {
-			if (!CreateMyService(xhunter_name.c_str(), xhunter_name.c_str(), xhunter_path.c_str())) {
+		if (!ServiceExists(m_serviceName)) {
+			if (!CreateServiceEntry(m_serviceName, m_serviceName, m_driverPath)) {
 				m_lastError = 1;
 				return false;
 			}
 
-			if (!ExportXHunter(xhunter_path)) {
+			if (!ExportDriver(m_driverPath)) {
 				m_lastError = 2;
 				return false;
 			}
 
-			if (!StartMyService(xhunter_name.c_str())) {
+			if (!StartServiceEntry(m_serviceName)) {
 				m_lastError = 3;
 				return false;
 			}
 
 			m_selfRun = true;
 		} else {
-			if (!IsMyServiceRunning(xhunter_name.c_str())) {
-				std::ifstream f(xhunter_path, std::ios::binary);
+			if (!IsServiceRunning(m_serviceName)) {
+				std::ifstream f(m_driverPath, std::ios::binary);
 
 				while (!f.is_open()) {
-					if (!ExportXHunter(xhunter_path)) {
+					if (!ExportDriver(m_driverPath)) {
 						m_lastError = 5;
 						return false;
 					}
 
-					if (!StartMyService(XSW("xhunter1"))) {
+					if (!StartServiceEntry(m_serviceName)) {
 						m_lastError = 7;
 						return false;
 					}
@@ -252,15 +112,15 @@ namespace xhunterapi {
 				auto sum_hex = crypto::bin2hex(sum);
 
 				if (sum_hex != XSA("596d8a02a4dfbb0e71a985a8ef2b01242762bb518b60b0f23f83f1ac15dbf2619b1a1e8c93316e06f25ac989469aa3f5f5edfbdf2c4979394e68b6ab9d726d65")) {
-					std::filesystem::remove(xhunter_path);
+					std::filesystem::remove(m_driverPath);
 
-					if (!ExportXHunter(xhunter_path)) {
+					if (!ExportDriver(m_driverPath)) {
 						m_lastError = 5;
 						return false;
 					}
 				}
 
-				if (!StartMyService(XSW("xhunter1"))) {
+				if (!StartServiceEntry(m_serviceName)) {
 					m_lastError = 6;
 					return false;
 				}
@@ -280,8 +140,124 @@ namespace xhunterapi {
 		return true;
 	}
 
+	bool XHunterClient::IsServiceRunning(const std::wstring& name) const noexcept {
+		SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+		if (!scManager) return false;
+
+		SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_QUERY_STATUS);
+		if (!service) {
+			CloseServiceHandle(scManager);
+			return false;
+		}
+
+		SERVICE_STATUS_PROCESS status;
+		DWORD bytesNeeded;
+		bool running = false;
+
+		if (QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO, (LPBYTE)&status, sizeof(status), &bytesNeeded)) {
+			running = (status.dwCurrentState == SERVICE_RUNNING);
+		}
+
+		CloseServiceHandle(service);
+		CloseServiceHandle(scManager);
+
+		return running;
+	}
+
+	bool XHunterClient::ServiceExists(const std::wstring& name) const noexcept {
+		SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+		if (!scManager) return false;
+
+		SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_QUERY_STATUS);
+		bool exists = service != nullptr;
+
+		if (service) CloseServiceHandle(service);
+		CloseServiceHandle(scManager);
+
+		return exists;
+	}
+
+	bool XHunterClient::CreateServiceEntry(const std::wstring& name, const std::wstring& displayName, const std::wstring& binaryPath) const noexcept {
+		SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CREATE_SERVICE);
+		if (!scManager) return false;
+
+		SC_HANDLE service = CreateService(
+			scManager,
+			name.c_str(),
+			displayName.c_str(),
+			SERVICE_ALL_ACCESS,
+			SERVICE_KERNEL_DRIVER,
+			SERVICE_DEMAND_START,
+			SERVICE_ERROR_NORMAL,
+			binaryPath.c_str(),
+			nullptr, nullptr, nullptr, nullptr, nullptr);
+
+		if (!service) {
+			CloseServiceHandle(scManager);
+			return false;
+		}
+
+		CloseServiceHandle(service);
+		CloseServiceHandle(scManager);
+		return true;
+	}
+
+	bool XHunterClient::StartServiceEntry(const std::wstring& name) const noexcept {
+		SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+		if (!scManager) return false;
+
+		SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_START);
+		if (!service) {
+			CloseServiceHandle(scManager);
+			return false;
+		}
+
+		bool success = StartService(service, 0, nullptr);
+
+		CloseServiceHandle(service);
+		CloseServiceHandle(scManager);
+		return success;
+	}
+
+	bool XHunterClient::StopServiceEntry(const std::wstring& name) const noexcept {
+		SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+		if (!scManager) return false;
+
+		SC_HANDLE service = OpenService(scManager, name.c_str(), SERVICE_STOP | SERVICE_QUERY_STATUS);
+		if (!service) {
+			CloseServiceHandle(scManager);
+			return false;
+		}
+
+		SERVICE_STATUS status;
+		bool success = ControlService(service, SERVICE_CONTROL_STOP, &status);
+
+		CloseServiceHandle(service);
+		CloseServiceHandle(scManager);
+		return success;
+	}
+
+	bool XHunterClient::ExportDriver(const std::wstring& path) const noexcept {
+		std::ofstream f(path, std::ios::binary);
+
+		if (!f.is_open()) {
+			return false;
+		}
+
+		std::string dec_xhunter_data;
+		dec_xhunter_data.resize(XHUNTER1_SYS_SIZE);
+		memcpy(dec_xhunter_data.data(), XHUNTER1_SYS_DATA, XHUNTER1_SYS_SIZE);
+
+		for (size_t i = 0; i < dec_xhunter_data.size(); i++) {
+			dec_xhunter_data[i] ^= 0xFF;
+		}
+
+		f.write(dec_xhunter_data.data(), dec_xhunter_data.size());
+		return true;
+	}
+
 	std::unique_ptr<xhunter1_common_res> XHunterClient::SendPacket(Opcode opcode, const void* body, size_t body_len) noexcept {
-		VMP_BEGIN_MUTATION("Woe5xsiJCS0zHoFalUGhpmK5Q86clmtMky68uJRIqDBF1FhMNmxB1tBvGdUR1NSv");
+		VMP_BEGIN_MUTATION(__FUNCTION__);
 		
 		if (m_hDriver == INVALID_HANDLE_VALUE || body_len > (sizeof(((xhunter1_req*)NULL)->body))) {
 			return nullptr;
@@ -323,7 +299,7 @@ namespace xhunterapi {
 	}
 
 	ApiResult<HANDLE> XHunterClient::OpenProcess(DWORD dwProcessId, DWORD dwDesiredAccess) noexcept {
-		VMP_BEGIN_MUTATION("gIvDgOxc5egDhIIoF3ZF92tyKUbr6F1hHriv8BmtzVQK1bmXXwo6b1jGlU0cmf8r");
+		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_handle_req handle_req = { 0 };
 		handle_req.dwProcessId = dwProcessId;
 		handle_req.dwDesiredAccess = dwDesiredAccess;
@@ -344,7 +320,7 @@ namespace xhunterapi {
 	}
 
 	VoidResult XHunterClient::StartHandleHook() noexcept {
-		VMP_BEGIN_MUTATION("dWEs7DNFCvPRajf4np3hy0gTsXKzNk2FNy9SQJYcMBXLICUEJcR2JZKn7lsVR7Ko");
+		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_sethookstate hookstate_req = { 0 };
 		hookstate_req.byHookState = 1;
 
@@ -356,7 +332,7 @@ namespace xhunterapi {
 	}
 
 	VoidResult XHunterClient::StopHandleHook() noexcept {
-		VMP_BEGIN_MUTATION("1xqJaNfjOV4JGndjNjiejC4UJYxquAJpdjiWOi37qqCCEQz3le3jRs5ZJB2kObe3");
+		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_sethookstate hookstate_req = { 0 };
 		hookstate_req.byHookState = 0;
 
@@ -368,7 +344,7 @@ namespace xhunterapi {
 	}
 
 	VoidResult XHunterClient::RegisterPid(DWORD dwPid, PidFlag flag) noexcept {
-		VMP_BEGIN_MUTATION("4RvApJPF9ibU59y7PkfHTlzroi29GBsb8Wi10M4f5ef9Bk8rYNvFX64L97PTMvou");
+		VMP_BEGIN_MUTATION(__FUNCTION__);
 
 		PIDMAP_PARAM pidmap_req = { 0 };
 		pidmap_req.pid = dwPid;
@@ -382,7 +358,7 @@ namespace xhunterapi {
 	}
 
 	VoidResult XHunterClient::UnregisterPid(DWORD dwPid) noexcept {
-		VMP_BEGIN_MUTATION("ItdSaN4rdgD2Pb1bRW1FV733AFz2z0c6V1MqURBSiaASSjBdGRVyfzl8BKchYuSu");
+		VMP_BEGIN_MUTATION(__FUNCTION__);
 		PIDREMOVE_PARAM pidremove_req = { 0 };
 		pidremove_req.pid = dwPid;
 
@@ -394,7 +370,7 @@ namespace xhunterapi {
 	}
 
 	ApiResult<DWORD> XHunterClient::GetProtectedProcessFlag(DWORD dwPid) noexcept {
-		VMP_BEGIN_MUTATION("UtDiWdNwqt3d741rBBZwyaN951nE9K8j1gKMMoU84MTQ6vWK2dpNfO9jzUsIiEeJ");
+		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_GetProcessProtectFlag_req protect_req = { 0 };
 		protect_req.pid = dwPid;
 
@@ -414,7 +390,7 @@ namespace xhunterapi {
 	}
 
 	VoidResult XHunterClient::RegisterReportReader() noexcept {
-		VMP_BEGIN_MUTATION("zPfYNEXt171cm2LtZKGKVQ6o1K2ttAEiSTfJe0uDIDg95z24vGAWm2Vb2V1zUA8B");
+		VMP_BEGIN_MUTATION(__FUNCTION__);
 		//dummy var, xhunter not read it
 		xhunter1_proc_GetProcessProtectFlag_req protect_req = { 0 };
 		protect_req.pid = 0;

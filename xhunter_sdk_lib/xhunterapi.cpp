@@ -203,7 +203,7 @@ namespace xhunterapi {
 		return res;
 	}
 
-	ApiResult<HANDLE> XHunterClient::OpenProcess(DWORD dwProcessId, DWORD dwDesiredAccess) noexcept {
+	xhunter::Result<HANDLE> XHunterClient::OpenProcess(DWORD dwProcessId, DWORD dwDesiredAccess) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_handle_req handle_req = { 0 };
 		handle_req.dwProcessId = dwProcessId;
@@ -211,44 +211,56 @@ namespace xhunterapi {
 
 		auto res_packet = SendPacket(Opcode::OpenProcess, &handle_req, sizeof(xhunter1_proc_handle_req));
 
-		ApiResult<HANDLE> result = { STATUS_UNSUCCESSFUL, std::nullopt };
-
-		if (res_packet) {
-			result.status = res_packet->dwStatus;
-			if (res_packet->dwStatus == STATUS_SUCCESS) {
-				result.value = res_packet->hProc;
-			}
+		if (!res_packet) {
+			X_FAIL_MSG("Failed to send OpenProcess packet");
 		}
 
+		if (res_packet->dwStatus != STATUS_SUCCESS) {
+			X_FAIL(res_packet->dwStatus, "Driver rejected OpenProcess request");
+		}
+
+		HANDLE out = res_packet->hProc;
 		VMP_END();
-		return result;
+		return out;
 	}
 
-	VoidResult XHunterClient::StartHandleHook() noexcept {
+	xhunter::Result<void> XHunterClient::StartHandleHook() noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_sethookstate hookstate_req = { 0 };
 		hookstate_req.byHookState = 1;
 
 		auto res_packet = SendPacket(Opcode::SetHookState, &hookstate_req, sizeof(xhunter1_proc_sethookstate));
-		VoidResult result = { res_packet ? static_cast<NTSTATUS>(res_packet->dwStatus) : STATUS_UNSUCCESSFUL };
+		if (!res_packet) {
+			X_FAIL_MSG("Failed to send StartHandleHook packet");
+		}
+
+		if (res_packet->dwStatus != STATUS_SUCCESS) {
+			X_FAIL(res_packet->dwStatus, "Driver rejected StartHandleHook request");
+		}
 		
 		VMP_END();
-		return result;
+		return {};
 	}
 
-	VoidResult XHunterClient::StopHandleHook() noexcept {
+	xhunter::Result<void> XHunterClient::StopHandleHook() noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_sethookstate hookstate_req = { 0 };
 		hookstate_req.byHookState = 0;
 
 		auto res_packet = SendPacket(Opcode::SetHookState, &hookstate_req, sizeof(xhunter1_proc_sethookstate));
-		VoidResult result = { res_packet ? static_cast<NTSTATUS>(res_packet->dwStatus) : STATUS_UNSUCCESSFUL };
+		if (!res_packet) {
+			X_FAIL_MSG("Failed to send StopHandleHook packet");
+		}
+
+		if (res_packet->dwStatus != STATUS_SUCCESS) {
+			X_FAIL(res_packet->dwStatus, "Driver rejected StopHandleHook request");
+		}
 		
 		VMP_END();
-		return result;
+		return {};
 	}
 
-	VoidResult XHunterClient::RegisterPid(DWORD dwPid, PidFlag flag) noexcept {
+	xhunter::Result<void> XHunterClient::RegisterPid(DWORD dwPid, PidFlag flag) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 
 		PIDMAP_PARAM pidmap_req = { 0 };
@@ -256,54 +268,72 @@ namespace xhunterapi {
 		pidmap_req.type = static_cast<ULONG>(flag);
 
 		auto res_packet = SendPacket(Opcode::MapPid, &pidmap_req, sizeof(PIDMAP_PARAM));
-		VoidResult result = { res_packet ? static_cast<NTSTATUS>(res_packet->dwStatus) : STATUS_UNSUCCESSFUL };
+		if (!res_packet) {
+			X_FAIL_MSG("Failed to send RegisterPid packet");
+		}
+
+		if (res_packet->dwStatus != STATUS_SUCCESS) {
+			X_FAIL(res_packet->dwStatus, "Driver rejected RegisterPid request");
+		}
 
 		VMP_END();
-		return result;
+		return {};
 	}
 
-	VoidResult XHunterClient::UnregisterPid(DWORD dwPid) noexcept {
+	xhunter::Result<void> XHunterClient::UnregisterPid(DWORD dwPid) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		PIDREMOVE_PARAM pidremove_req = { 0 };
 		pidremove_req.pid = dwPid;
 
 		auto res_packet = SendPacket(Opcode::UnmapPid, &pidremove_req, sizeof(PIDREMOVE_PARAM));
-		VoidResult result = { res_packet ? static_cast<NTSTATUS>(res_packet->dwStatus) : STATUS_UNSUCCESSFUL };
+		if (!res_packet) {
+			X_FAIL_MSG("Failed to send UnregisterPid packet");
+		}
+
+		if (res_packet->dwStatus != STATUS_SUCCESS) {
+			X_FAIL(res_packet->dwStatus, "Driver rejected UnregisterPid request");
+		}
 
 		VMP_END();
-		return result;
+		return {};
 	}
 
-	ApiResult<DWORD> XHunterClient::GetProtectedProcessFlag(DWORD dwPid) noexcept {
+	xhunter::Result<DWORD> XHunterClient::GetProtectedProcessFlag(DWORD dwPid) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_GetProcessProtectFlag_req protect_req = { 0 };
 		protect_req.pid = dwPid;
 
 		auto res_packet = SendPacket(Opcode::GetProtectFlag, &protect_req, sizeof(xhunter1_proc_GetProcessProtectFlag_req));
 
-		ApiResult<DWORD> result = { STATUS_UNSUCCESSFUL, std::nullopt };
-
-		if (res_packet) {
-			result.status = res_packet->dwStatus;
-			if (res_packet->dwStatus == STATUS_SUCCESS) {
-				result.value = res_packet->dwProtectFlag;
-			}
+		if (!res_packet) {
+			X_FAIL_MSG("Failed to send GetProtectedProcessFlag packet");
 		}
 
+		if (res_packet->dwStatus != STATUS_SUCCESS) {
+			X_FAIL(res_packet->dwStatus, "Driver rejected GetProtectedProcessFlag request");
+		}
+
+		DWORD out = res_packet->dwProtectFlag;
 		VMP_END();
-		return result;
+		return out;
 	}
 
-	VoidResult XHunterClient::RegisterReportReader() noexcept {
+	xhunter::Result<void> XHunterClient::RegisterReportReader() noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		//dummy var, xhunter not read it
 		xhunter1_proc_GetProcessProtectFlag_req protect_req = { 0 };
 		protect_req.pid = 0;
 
 		auto res_packet = SendPacket(Opcode::RegisterReportReader, &protect_req, sizeof(xhunter1_proc_GetProcessProtectFlag_req));
-		VoidResult result = { res_packet ? static_cast<NTSTATUS>(res_packet->dwStatus) : STATUS_UNSUCCESSFUL };
+		if (!res_packet) {
+			X_FAIL_MSG("Failed to send RegisterReportReader packet");
+		}
+
+		if (res_packet->dwStatus != STATUS_SUCCESS) {
+			X_FAIL(res_packet->dwStatus, "Driver rejected RegisterReportReader request");
+		}
 
 		VMP_END();
-		return result;
+		return {};
 	}
 }

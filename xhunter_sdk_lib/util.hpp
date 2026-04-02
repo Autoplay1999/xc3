@@ -1,11 +1,7 @@
 #define NT_REG_PREP             "\\Registry\\Machine\\"
 #define DRIVER_REGKEY           "System\\CurrentControlSet\\Services\\"
 
-#ifdef __XHUNTER_VERBOSE
-#define XHUNTER_TRACE(fmt, ...) printf("[XHunter] " fmt, __VA_ARGS__);
-#else
-#define XHUNTER_TRACE(...)
-#endif
+#include "error.hpp"
 
 namespace util {
     // Service Management Utilities
@@ -377,47 +373,50 @@ Cleanup:
 		return NT_SUCCESS(status);
 	}
     
-    bool load_driver_nt(std::wstring_view serviceName, std::wstring_view driverPath) {
+	xhunter::Result<void> load_driver_nt(std::wstring_view serviceName, std::wstring_view driverPath) {
         VMP_BEGIN_MUTATION("ljSjtwzkVR3ahHaDNSs73kZefoCYzKgI42YcWdq3JlGmbxi6nZeHrs3YpetI2lYg");
         if (!create_service_registry(serviceName, driverPath)) {
-            XHUNTER_TRACE("Failed to create driver entry");
-            return false;
+            X_FAIL_MSG("Failed to create driver entry in registry");
         }
 
         std::wstring wsDriverServiceName = std::format_(XSW(NT_REG_PREP  DRIVER_REGKEY "{}"), serviceName).c_str();
 
         UNICODE_STRING usDriverServiceName;
-        usDriverServiceName.Buffer = wsDriverServiceName.data();
-        usDriverServiceName.Length = wsDriverServiceName.size() * sizeof(wchar_t);
-        usDriverServiceName.MaximumLength = wsDriverServiceName.size() * sizeof(wchar_t);
+        usDriverServiceName.Buffer = const_cast<PWSTR>(wsDriverServiceName.data());
+        usDriverServiceName.Length = static_cast<USHORT>(wsDriverServiceName.size() * sizeof(wchar_t));
+        usDriverServiceName.MaximumLength = static_cast<USHORT>(wsDriverServiceName.size() * sizeof(wchar_t));
 
-        bool success = NT_SUCCESS(NtLoadDriver(&usDriverServiceName));
+        NTSTATUS status = NtLoadDriver(&usDriverServiceName);
+        if (!NT_SUCCESS(status)) {
+            X_FAIL(status, "NtLoadDriver failed");
+        }
+        
         VMP_END();
-		return success;
+		return {};
 	}
 
-	bool unload_driver_nt(const std::wstring& serviceName, std::wstring_view driverPath) {
+	xhunter::Result<void> unload_driver_nt(const std::wstring& serviceName, std::wstring_view driverPath) {
         VMP_BEGIN_MUTATION("6cO06W8iBW0HPbLCKX5qd9wkqDsxh24zyJ8dxLz5pqRb6KcfEO0ctgxHOvIfLSTe");
         if (!create_service_registry(serviceName, driverPath)) {
-            XHUNTER_TRACE("Failed to create driver entry");
-            return false;
+            X_FAIL_MSG("Failed to create driver registry keys for unload");
         }
 
         std::wstring wsDriverServiceName = std::format_(XSW(NT_REG_PREP  DRIVER_REGKEY "{}"), serviceName).c_str();
 
         UNICODE_STRING usDriverServiceName;
-        usDriverServiceName.Buffer = wsDriverServiceName.data();
-        usDriverServiceName.Length = wsDriverServiceName.size() * sizeof(wchar_t);
-        usDriverServiceName.MaximumLength = wsDriverServiceName.size() * sizeof(wchar_t);
+        usDriverServiceName.Buffer = const_cast<PWSTR>(wsDriverServiceName.data());
+        usDriverServiceName.Length = static_cast<USHORT>(wsDriverServiceName.size() * sizeof(wchar_t));
+        usDriverServiceName.MaximumLength = static_cast<USHORT>(wsDriverServiceName.size() * sizeof(wchar_t));
 
-        bool success = false;
-        if (NT_SUCCESS(NtUnloadDriver(&usDriverServiceName))) {
+        NTSTATUS status = NtUnloadDriver(&usDriverServiceName);
+        if (NT_SUCCESS(status)) {
             supxDeleteKeyRecursive(HKEY_LOCAL_MACHINE, wsDriverServiceName.substr(0, 18).c_str());
-            success = true;
+        } else {
+            X_FAIL(status, "NtUnloadDriver failed");
         }
 
         VMP_END();
-		return success;
+		return {};
 	}
 
 	bool is_driver_loaded(std::wstring ObjectName) {

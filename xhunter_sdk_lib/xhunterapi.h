@@ -14,6 +14,8 @@
 #define STATUS_SUCCESS ((NTSTATUS)0x00000000L)
 #endif
 
+#include "error.hpp"
+
 namespace xhunterapi
 {
 	enum class PidFlag : uint32_t {
@@ -112,19 +114,7 @@ namespace xhunterapi
 
 #pragma pack(pop)
 
-	template<typename T>
-	struct ApiResult {
-		NTSTATUS status;
-		std::optional<T> value;
-
-		bool is_success() const { return status == STATUS_SUCCESS && value.has_value(); }
-	};
-
-	struct VoidResult {
-		NTSTATUS status;
-
-		bool is_success() const { return status == STATUS_SUCCESS; }
-	};
+	// Replaced by xhunter::Result
 
 	class XHunterClient {
 	public:
@@ -142,13 +132,13 @@ namespace xhunterapi
 		int GetLastError() const noexcept;
 
 		// API Methods
-		ApiResult<HANDLE> OpenProcess(DWORD dwProcessId, DWORD dwDesiredAccess) noexcept;
-		VoidResult StartHandleHook() noexcept;
-		VoidResult StopHandleHook() noexcept;
-		VoidResult RegisterPid(DWORD dwPid, PidFlag flag) noexcept;
-		VoidResult UnregisterPid(DWORD dwPid) noexcept;
-		ApiResult<DWORD> GetProtectedProcessFlag(DWORD dwPid) noexcept;
-		VoidResult RegisterReportReader() noexcept;
+		xhunter::Result<HANDLE> OpenProcess(DWORD dwProcessId, DWORD dwDesiredAccess) noexcept;
+		xhunter::Result<void> StartHandleHook() noexcept;
+		xhunter::Result<void> StopHandleHook() noexcept;
+		xhunter::Result<void> RegisterPid(DWORD dwPid, PidFlag flag) noexcept;
+		xhunter::Result<void> UnregisterPid(DWORD dwPid) noexcept;
+		xhunter::Result<DWORD> GetProtectedProcessFlag(DWORD dwPid) noexcept;
+		xhunter::Result<void> RegisterReportReader() noexcept;
 
 	private:
 		HANDLE m_hDriver;

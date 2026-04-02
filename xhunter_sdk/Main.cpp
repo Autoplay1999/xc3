@@ -109,8 +109,13 @@ int main()
 		return -1;
 	}
 
-	client.StartHandleHook();
-	client.RegisterReportReader();
+	if (auto res = client.StartHandleHook(); !res) {
+		printf("[-] Failed to start handle hook, status: 0x%08X\n", res.status());
+	}
+	
+	if (auto res = client.RegisterReportReader(); !res) {
+		printf("[-] Failed to register report reader, status: 0x%08X\n", res.status());
+	}
 
 	while (true)
 	{
@@ -139,10 +144,12 @@ int main()
 			{
 				auto res = client.StartHandleHook();
 				if (res.is_success()) {
-					client.RegisterReportReader();
+					if (auto regRes = client.RegisterReportReader(); !regRes) {
+						printf("Failed to register report reader, status: 0x%08X\n", regRes.status());
+					}
 					printf("Handle hook started!\n");
 				} else {
-					printf("Failed to start handle hook, status: 0x%08X\n", res.status);
+					printf("Failed to start handle hook, status: 0x%08X\n", res.status());
 				}
 				break;
 			}
@@ -152,7 +159,7 @@ int main()
 				if (res.is_success()) {
 					printf("Handle hook stopped!\n");
 				} else {
-					printf("Failed to stop handle hook, status: 0x%08X\n", res.status);
+					printf("Failed to stop handle hook, status: 0x%08X\n", res.status());
 				}
 				break;
 			}
@@ -164,7 +171,7 @@ int main()
 				if (res.is_success()) {
 					printf("Complete!\n");
 				} else {
-					printf("Failed with status: 0x%08X\n", res.status);
+					printf("Failed with status: 0x%08X\n", res.status());
 				}
 				break;
 			}
@@ -177,7 +184,7 @@ int main()
 				if (res.is_success()) {
 					printf("Complete!\n");
 				} else {
-					printf("Failed with status: 0x%08X\n", res.status);
+					printf("Failed with status: 0x%08X\n", res.status());
 				}
 				break;
 			}
@@ -187,9 +194,9 @@ int main()
 				printf("Enter Process ID: "); scanf_s("%lu", &dwPid);
 				auto res = client.GetProtectedProcessFlag(dwPid);
 				if (res.is_success()) {
-					printf("Process Flag: %lu\n", res.value.value());
+					printf("Process Flag: %lu\n", res.value());
 				} else {
-					printf("Failed to get flag, status: 0x%08X\n", res.status);
+					printf("Failed to get flag, status: 0x%08X\n", res.status());
 				}
 				break;
 			}
@@ -201,12 +208,12 @@ int main()
 				client.RegisterPid(GetCurrentProcessId(), PidFlag::Protected | PidFlag::Allow);
 				auto openRes = client.OpenProcess(dwPid, PROCESS_ALL_ACCESS);
 				
-				if (!openRes.is_success() || openRes.value.value() == INVALID_HANDLE_VALUE) {
-					printf("Failed to open process, status: 0x%08X\n", openRes.status);
+				if (!openRes.is_success() || openRes.value() == INVALID_HANDLE_VALUE) {
+					printf("Failed to open process, status: 0x%08X\n", openRes.status());
 					break;
 				}
 
-				HANDLE hProcess = openRes.value.value();
+				HANDLE hProcess = openRes.value();
 				PUBLIC_OBJECT_BASIC_INFORMATION objectInformation;
 				ULONG objectInformationLength = sizeof(objectInformation);
 				CHAR szAccessRight[1000] = { 0 };

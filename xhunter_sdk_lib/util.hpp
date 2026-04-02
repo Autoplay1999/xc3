@@ -282,33 +282,8 @@ namespace util {
         return FALSE;
     }
 
-	bool create_driver_entry(std::wstring_view serviceName, std::wstring_view driverPath) {
+	bool create_service_registry(std::wstring_view serviceName, std::wstring_view driverPath) {
         VMP_BEGIN_MUTATION("whsevsONw6zM8lH1pdMSZCyrRkRmm9LMUGkZ8VlbkXwQAYkXdV09jaqd4UY5R9jt");
-#if 0
-		SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CREATE_SERVICE);
-
-		if (!scManager)
-			return false;
-
-		SC_HANDLE service = CreateService(
-			scManager,
-			serviceName.c_str(),
-			L"",
-			SERVICE_ALL_ACCESS,
-			SERVICE_KERNEL_DRIVER,
-			SERVICE_DEMAND_START,
-			SERVICE_ERROR_NORMAL,
-            driverPath.c_str(),
-			nullptr, nullptr, nullptr, nullptr, nullptr);
-
-		if (!service) {
-			CloseServiceHandle(scManager);
-			return false;
-		}
-
-		CloseServiceHandle(service);
-		CloseServiceHandle(scManager);
-#else
         NTSTATUS status = STATUS_UNSUCCESSFUL;
         DWORD dwData, dwResult;
         HKEY keyHandle = NULL;
@@ -321,7 +296,7 @@ namespace util {
                                               &driverImagePath,
                                               NULL,
                                               NULL)) {
-                return STATUS_INVALID_PARAMETER_2;
+                return false;
             }
         }
 
@@ -398,36 +373,13 @@ Cleanup:
                 RtlFreeUnicodeString(&driverImagePath);
             }
         }
-#endif
         VMP_END();
-		return true;
+		return NT_SUCCESS(status);
 	}
     
-    bool load_driver(std::wstring_view serviceName, std::wstring_view driverPath) {
+    bool load_driver_nt(std::wstring_view serviceName, std::wstring_view driverPath) {
         VMP_BEGIN_MUTATION("ljSjtwzkVR3ahHaDNSs73kZefoCYzKgI42YcWdq3JlGmbxi6nZeHrs3YpetI2lYg");
-#if 0
-        SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
-
-        if (!scManager)
-            return false;
-
-        SC_HANDLE service = OpenService(scManager, serviceName.c_str(), SERVICE_START);
-
-        if (!service) {
-            CloseServiceHandle(scManager);
-            return false;
-        }
-
-        if (!StartService(service, 0, nullptr)) {
-            CloseServiceHandle(service);
-            CloseServiceHandle(scManager);
-            return false;
-        }
-
-        CloseServiceHandle(service);
-        CloseServiceHandle(scManager);
-#else
-        if (!create_driver_entry(serviceName, driverPath)) {
+        if (!create_service_registry(serviceName, driverPath)) {
             XHUNTER_TRACE("Failed to create driver entry");
             return false;
         }
@@ -439,41 +391,14 @@ Cleanup:
         usDriverServiceName.Length = wsDriverServiceName.size() * sizeof(wchar_t);
         usDriverServiceName.MaximumLength = wsDriverServiceName.size() * sizeof(wchar_t);
 
-        if (!NT_SUCCESS(NtLoadDriver(&usDriverServiceName)))
-            return false;
-
-#endif
+        bool success = NT_SUCCESS(NtLoadDriver(&usDriverServiceName));
         VMP_END();
-		return true;
+		return success;
 	}
 
-	bool unload_driver(const std::wstring& serviceName, std::wstring_view driverPath) {
+	bool unload_driver_nt(const std::wstring& serviceName, std::wstring_view driverPath) {
         VMP_BEGIN_MUTATION("6cO06W8iBW0HPbLCKX5qd9wkqDsxh24zyJ8dxLz5pqRb6KcfEO0ctgxHOvIfLSTe");
-#if 0
-        SC_HANDLE scManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
-
-        if (!scManager)
-            return false;
-
-        SC_HANDLE service = OpenService(scManager, serviceName.c_str(), SERVICE_STOP | SERVICE_QUERY_STATUS);
-
-        if (!service) {
-            CloseServiceHandle(scManager);
-            return false;
-        }
-
-        SERVICE_STATUS status;
-
-        if (!ControlService(service, SERVICE_CONTROL_STOP, &status)) {
-            CloseServiceHandle(service);
-            CloseServiceHandle(scManager);
-            return false;
-        }
-
-        CloseServiceHandle(service);
-        CloseServiceHandle(scManager);
-#else
-        if (!create_driver_entry(serviceName, driverPath)) {
+        if (!create_service_registry(serviceName, driverPath)) {
             XHUNTER_TRACE("Failed to create driver entry");
             return false;
         }
@@ -485,15 +410,17 @@ Cleanup:
         usDriverServiceName.Length = wsDriverServiceName.size() * sizeof(wchar_t);
         usDriverServiceName.MaximumLength = wsDriverServiceName.size() * sizeof(wchar_t);
 
+        bool success = false;
         if (NT_SUCCESS(NtUnloadDriver(&usDriverServiceName))) {
             supxDeleteKeyRecursive(HKEY_LOCAL_MACHINE, wsDriverServiceName.substr(0, 18).c_str());
+            success = true;
         }
-#endif
+
         VMP_END();
-		return true;
+		return success;
 	}
 
-	bool drvier_is_already_loaded(std::wstring ObjectName) {
+	bool is_driver_loaded(std::wstring ObjectName) {
         OBJSCANPARAM Param;
 
         Param.Buffer = ObjectName.c_str();

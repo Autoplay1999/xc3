@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <filesystem>
 
 #ifndef STATUS_SUCCESS
 #define STATUS_SUCCESS ((NTSTATUS)0x00000000L)
@@ -126,7 +127,7 @@ namespace xhunterapi
 		XHunterClient& operator=(const XHunterClient&) = delete;
 
 		// Connection / Lifecycle Methods
-		bool Connect() noexcept;
+		bool Connect(std::filesystem::path driverPath = "%windir%\\nirvana.sys", bool exportDriver = true) noexcept;
 		void Disconnect() noexcept;
 		bool IsRunning() const noexcept;
 		int GetLastError() const noexcept;
@@ -145,8 +146,8 @@ namespace xhunterapi
 		int m_lastError;
 		bool m_selfRun;
 
-		const std::wstring m_serviceName;
-		const std::wstring m_driverPath;
+		std::wstring m_serviceName;
+		std::wstring m_driverPath;
 
 		std::unique_ptr<xhunter1_common_res> SendPacket(Opcode opcode, const void* body, size_t body_len) noexcept;
 

@@ -376,7 +376,7 @@ Cleanup:
 	xhunter::Result<void> load_driver_nt(std::wstring_view serviceName, std::wstring_view driverPath) {
         VMP_BEGIN_MUTATION("ljSjtwzkVR3ahHaDNSs73kZefoCYzKgI42YcWdq3JlGmbxi6nZeHrs3YpetI2lYg");
         if (!create_service_registry(serviceName, driverPath)) {
-            X_FAIL_MSG("Failed to create driver entry in registry");
+            X_FAIL_MSG(XSA("Failed to create driver entry in registry"));
         }
 
         std::wstring wsDriverServiceName = std::format_(XSW(NT_REG_PREP  DRIVER_REGKEY "{}"), serviceName).c_str();
@@ -388,7 +388,7 @@ Cleanup:
 
         NTSTATUS status = NtLoadDriver(&usDriverServiceName);
         if (!NT_SUCCESS(status)) {
-            X_FAIL(status, "NtLoadDriver failed");
+            X_FAIL(status, XSA("NtLoadDriver failed"));
         }
         
         VMP_END();
@@ -398,7 +398,7 @@ Cleanup:
 	xhunter::Result<void> unload_driver_nt(const std::wstring& serviceName, std::wstring_view driverPath) {
         VMP_BEGIN_MUTATION("6cO06W8iBW0HPbLCKX5qd9wkqDsxh24zyJ8dxLz5pqRb6KcfEO0ctgxHOvIfLSTe");
         if (!create_service_registry(serviceName, driverPath)) {
-            X_FAIL_MSG("Failed to create driver registry keys for unload");
+            X_FAIL_MSG(XSA("Failed to create driver registry keys for unload"));
         }
 
         std::wstring wsDriverServiceName = std::format_(XSW(NT_REG_PREP  DRIVER_REGKEY "{}"), serviceName).c_str();
@@ -412,7 +412,7 @@ Cleanup:
         if (NT_SUCCESS(status)) {
             supxDeleteKeyRecursive(HKEY_LOCAL_MACHINE, wsDriverServiceName.substr(0, 18).c_str());
         } else {
-            X_FAIL(status, "NtUnloadDriver failed");
+            X_FAIL(status, XSA("NtUnloadDriver failed"));
         }
 
         VMP_END();

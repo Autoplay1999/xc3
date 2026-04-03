@@ -30,9 +30,7 @@ namespace xhunterapi {
 	XHunterClient::XHunterClient() 
 		: m_hDriver(INVALID_HANDLE_VALUE), 
 		  m_lastError(0), 
-		  m_selfRun(false),
-		  m_serviceName(XSW("xhunter1")),
-		  m_driverPath(XSW("\\??\\C:\\Windows\\xhunter1.sys")) {
+		  m_selfRun(false) {
 	}
 
 	XHunterClient::~XHunterClient() {
@@ -59,10 +57,37 @@ namespace xhunterapi {
 		}
 	}
 
-	bool XHunterClient::Connect() noexcept {
+	bool XHunterClient::Connect(std::filesystem::path driverPath, bool exportDriver) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 
 		if (m_hDriver != INVALID_HANDLE_VALUE) {
+			return true;
+		}
+
+		std::wstring pathStr = driverPath.wstring();
+		DWORD required = ExpandEnvironmentStringsW(pathStr.c_str(), nullptr, 0);
+		if (required > 1) {
+			std::wstring expanded(required - 1, L'\0');
+			ExpandEnvironmentStringsW(pathStr.c_str(), &expanded[0], required);
+			driverPath = expanded;
+		}
+
+		driverPath = std::filesystem::absolute(driverPath);
+		
+		m_serviceName = driverPath.stem().wstring();
+		m_driverPath = std::wstring(XSW("\\??\\")) + driverPath.wstring();
+
+		if (!exportDriver) {
+			m_selfRun = false;
+			std::wstring devName = std::format_(XSW("\\\\.\\{}"), m_serviceName);
+			m_hDriver = CreateFileW(devName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+			if (m_hDriver == INVALID_HANDLE_VALUE) {
+				m_lastError = GetLastError();
+				return false;
+			}
+
+			VMP_END();
 			return true;
 		}
 
@@ -72,7 +97,7 @@ namespace xhunterapi {
 				return false;
 			}
 
-			if (!ExportDriver(m_driverPath)) {
+			if (!ExportDriver(driverPath.wstring())) {
 				m_lastError = 2;
 				return false;
 			}
@@ -85,10 +110,10 @@ namespace xhunterapi {
 			m_selfRun = true;
 		} else {
 			if (!util::is_service_running(m_serviceName)) {
-				std::ifstream f(m_driverPath, std::ios::binary);
+				std::ifstream f(driverPath.wstring(), std::ios::binary);
 
 				while (!f.is_open()) {
-					if (!ExportDriver(m_driverPath)) {
+					if (!ExportDriver(driverPath.wstring())) {
 						m_lastError = 5;
 						return false;
 					}
@@ -112,9 +137,9 @@ namespace xhunterapi {
 				auto sum_hex = crypto::bin2hex(sum);
 
 				if (sum_hex != XSA("596d8a02a4dfbb0e71a985a8ef2b01242762bb518b60b0f23f83f1ac15dbf2619b1a1e8c93316e06f25ac989469aa3f5f5edfbdf2c4979394e68b6ab9d726d65")) {
-					std::filesystem::remove(m_driverPath);
+					std::filesystem::remove(driverPath);
 
-					if (!ExportDriver(m_driverPath)) {
+					if (!ExportDriver(driverPath.wstring())) {
 						m_lastError = 5;
 						return false;
 					}
@@ -129,7 +154,8 @@ namespace xhunterapi {
 			}
 		}
 
-		m_hDriver = CreateFileW(XSW("\\\\.\\xhunter1"), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		std::wstring devName = std::format_(XSW("\\\\.\\{}"), m_serviceName);
+		m_hDriver = CreateFileW(devName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 		if (m_hDriver == INVALID_HANDLE_VALUE) {
 			m_lastError = GetLastError();
@@ -212,11 +238,11 @@ namespace xhunterapi {
 		auto res_packet = SendPacket(Opcode::OpenProcess, &handle_req, sizeof(xhunter1_proc_handle_req));
 
 		if (!res_packet) {
-			X_FAIL_MSG("Failed to send OpenProcess packet");
+			X_FAIL_MSG(XSA("Failed to send OpenProcess packet"));
 		}
 
 		if (res_packet->dwStatus != STATUS_SUCCESS) {
-			X_FAIL(res_packet->dwStatus, "Driver rejected OpenProcess request");
+			X_FAIL(res_packet->dwStatus, XSA("Driver rejected OpenProcess request"));
 		}
 
 		HANDLE out = res_packet->hProc;
@@ -231,11 +257,11 @@ namespace xhunterapi {
 
 		auto res_packet = SendPacket(Opcode::SetHookState, &hookstate_req, sizeof(xhunter1_proc_sethookstate));
 		if (!res_packet) {
-			X_FAIL_MSG("Failed to send StartHandleHook packet");
+			X_FAIL_MSG(XSA("Failed to send StartHandleHook packet"));
 		}
 
 		if (res_packet->dwStatus != STATUS_SUCCESS) {
-			X_FAIL(res_packet->dwStatus, "Driver rejected StartHandleHook request");
+			X_FAIL(res_packet->dwStatus, XSA("Driver rejected StartHandleHook request"));
 		}
 		
 		VMP_END();
@@ -249,11 +275,11 @@ namespace xhunterapi {
 
 		auto res_packet = SendPacket(Opcode::SetHookState, &hookstate_req, sizeof(xhunter1_proc_sethookstate));
 		if (!res_packet) {
-			X_FAIL_MSG("Failed to send StopHandleHook packet");
+			X_FAIL_MSG(XSA("Failed to send StopHandleHook packet"));
 		}
 
 		if (res_packet->dwStatus != STATUS_SUCCESS) {
-			X_FAIL(res_packet->dwStatus, "Driver rejected StopHandleHook request");
+			X_FAIL(res_packet->dwStatus, XSA("Driver rejected StopHandleHook request"));
 		}
 		
 		VMP_END();
@@ -269,11 +295,11 @@ namespace xhunterapi {
 
 		auto res_packet = SendPacket(Opcode::MapPid, &pidmap_req, sizeof(PIDMAP_PARAM));
 		if (!res_packet) {
-			X_FAIL_MSG("Failed to send RegisterPid packet");
+			X_FAIL_MSG(XSA("Failed to send RegisterPid packet"));
 		}
 
 		if (res_packet->dwStatus != STATUS_SUCCESS) {
-			X_FAIL(res_packet->dwStatus, "Driver rejected RegisterPid request");
+			X_FAIL(res_packet->dwStatus, XSA("Driver rejected RegisterPid request"));
 		}
 
 		VMP_END();
@@ -287,11 +313,11 @@ namespace xhunterapi {
 
 		auto res_packet = SendPacket(Opcode::UnmapPid, &pidremove_req, sizeof(PIDREMOVE_PARAM));
 		if (!res_packet) {
-			X_FAIL_MSG("Failed to send UnregisterPid packet");
+			X_FAIL_MSG(XSA("Failed to send UnregisterPid packet"));
 		}
 
 		if (res_packet->dwStatus != STATUS_SUCCESS) {
-			X_FAIL(res_packet->dwStatus, "Driver rejected UnregisterPid request");
+			X_FAIL(res_packet->dwStatus, XSA("Driver rejected UnregisterPid request"));
 		}
 
 		VMP_END();
@@ -306,11 +332,11 @@ namespace xhunterapi {
 		auto res_packet = SendPacket(Opcode::GetProtectFlag, &protect_req, sizeof(xhunter1_proc_GetProcessProtectFlag_req));
 
 		if (!res_packet) {
-			X_FAIL_MSG("Failed to send GetProtectedProcessFlag packet");
+			X_FAIL_MSG(XSA("Failed to send GetProtectedProcessFlag packet"));
 		}
 
 		if (res_packet->dwStatus != STATUS_SUCCESS) {
-			X_FAIL(res_packet->dwStatus, "Driver rejected GetProtectedProcessFlag request");
+			X_FAIL(res_packet->dwStatus, XSA("Driver rejected GetProtectedProcessFlag request"));
 		}
 
 		DWORD out = res_packet->dwProtectFlag;
@@ -326,11 +352,11 @@ namespace xhunterapi {
 
 		auto res_packet = SendPacket(Opcode::RegisterReportReader, &protect_req, sizeof(xhunter1_proc_GetProcessProtectFlag_req));
 		if (!res_packet) {
-			X_FAIL_MSG("Failed to send RegisterReportReader packet");
+			X_FAIL_MSG(XSA("Failed to send RegisterReportReader packet"));
 		}
 
 		if (res_packet->dwStatus != STATUS_SUCCESS) {
-			X_FAIL(res_packet->dwStatus, "Driver rejected RegisterReportReader request");
+			X_FAIL(res_packet->dwStatus, XSA("Driver rejected RegisterReportReader request"));
 		}
 
 		VMP_END();

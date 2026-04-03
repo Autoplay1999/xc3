@@ -15,8 +15,6 @@
 #pragma comment(lib, "ntdll")
 #pragma comment(lib, "Bcrypt.lib")
 
-using namespace xhunterapi;
-
 typedef struct _PUBLIC_OBJECT_BASIC_INFORMATION {
 	ULONG       Attributes;
 	ACCESS_MASK GrantedAccess;
@@ -93,11 +91,11 @@ int main()
 {
 	SetConsoleTitleA("Xigncode SDK");
 
-	XHunterClient client;
+	XH_HANDLE hClient = XHunter_Connect(NULL, true);
 
-	if (!client.Connect())
+	if (!hClient)
 	{
-		printf("[-] Failed to get a handle to xhunter1. Is the driver loaded? Client Error = %d\n", client.GetLastError());
+		printf("[-] Failed to get a handle to xhunter1. Is the driver loaded? Client Error = %d\n", XHunter_GetLastError(hClient));
 		_getch();
 		return -1;
 	}
@@ -109,12 +107,14 @@ int main()
 		return -1;
 	}
 
-	if (auto res = client.StartHandleHook(); !res) {
-		printf("[-] Failed to start handle hook, status: 0x%08X\n", res.status());
+	NTSTATUS st = XHunter_StartHandleHook(hClient);
+	if (!NT_SUCCESS(st)) {
+		printf("[-] Failed to start handle hook, status: 0x%08X\n", st);
 	}
 	
-	if (auto res = client.RegisterReportReader(); !res) {
-		printf("[-] Failed to register report reader, status: 0x%08X\n", res.status());
+	st = XHunter_RegisterReportReader(hClient);
+	if (!NT_SUCCESS(st)) {
+		printf("[-] Failed to register report reader, status: 0x%08X\n", st);
 	}
 
 	while (true)
@@ -142,24 +142,25 @@ int main()
 		{
 			case 1:
 			{
-				auto res = client.StartHandleHook();
-				if (res.is_success()) {
-					if (auto regRes = client.RegisterReportReader(); !regRes) {
-						printf("Failed to register report reader, status: 0x%08X\n", regRes.status());
+				st = XHunter_StartHandleHook(hClient);
+				if (NT_SUCCESS(st)) {
+					NTSTATUS regRes = XHunter_RegisterReportReader(hClient);
+					if (!NT_SUCCESS(regRes)) {
+						printf("Failed to register report reader, status: 0x%08X\n", regRes);
 					}
 					printf("Handle hook started!\n");
 				} else {
-					printf("Failed to start handle hook, status: 0x%08X\n", res.status());
+					printf("Failed to start handle hook, status: 0x%08X\n", st);
 				}
 				break;
 			}
 			case 2:
 			{
-				auto res = client.StopHandleHook();
-				if (res.is_success()) {
+				st = XHunter_StopHandleHook(hClient);
+				if (NT_SUCCESS(st)) {
 					printf("Handle hook stopped!\n");
 				} else {
-					printf("Failed to stop handle hook, status: 0x%08X\n", res.status());
+					printf("Failed to stop handle hook, status: 0x%08X\n", st);
 				}
 				break;
 			}
@@ -167,36 +168,37 @@ int main()
 			{
 				DWORD dwPid = 0;
 				printf("Enter Process ID: "); scanf_s("%lu", &dwPid);
-				auto res = client.RegisterPid(dwPid, PidFlag::Allow);
-				if (res.is_success()) {
+				st = XHunter_RegisterPid(hClient, dwPid, PidFlag_Allow);
+				if (NT_SUCCESS(st)) {
 					printf("Complete!\n");
 				} else {
-					printf("Failed with status: 0x%08X\n", res.status());
+					printf("Failed with status: 0x%08X\n", st);
 				}
 				break;
 			}
 			case 4:
 			{
-				client.RegisterPid(GetCurrentProcessId(), PidFlag::Protected);
+				XHunter_RegisterPid(hClient, GetCurrentProcessId(), PidFlag_Protected);
 				DWORD dwPid = 0;
 				printf("Enter Process ID: "); scanf_s("%lu", &dwPid);
-				auto res = client.RegisterPid(dwPid, PidFlag::Protected);
-				if (res.is_success()) {
+				st = XHunter_RegisterPid(hClient, dwPid, PidFlag_Protected);
+				if (NT_SUCCESS(st)) {
 					printf("Complete!\n");
 				} else {
-					printf("Failed with status: 0x%08X\n", res.status());
+					printf("Failed with status: 0x%08X\n", st);
 				}
 				break;
 			}
 			case 5:
 			{
 				DWORD dwPid = 0;
+				DWORD flag = 0;
 				printf("Enter Process ID: "); scanf_s("%lu", &dwPid);
-				auto res = client.GetProtectedProcessFlag(dwPid);
-				if (res.is_success()) {
-					printf("Process Flag: %lu\n", res.value());
+				st = XHunter_GetProtectedProcessFlag(hClient, dwPid, &flag);
+				if (NT_SUCCESS(st)) {
+					printf("Process Flag: %lu\n", flag);
 				} else {
-					printf("Failed to get flag, status: 0x%08X\n", res.status());
+					printf("Failed to get flag, status: 0x%08X\n", st);
 				}
 				break;
 			}
@@ -205,15 +207,15 @@ int main()
 				DWORD dwPid = 0;
 				printf("Enter Process ID: "); scanf_s("%lu", &dwPid);
 				
-				client.RegisterPid(GetCurrentProcessId(), PidFlag::Protected | PidFlag::Allow);
-				auto openRes = client.OpenProcess(dwPid, PROCESS_ALL_ACCESS);
+				XHunter_RegisterPid(hClient, GetCurrentProcessId(), PidFlag_Protected | PidFlag_Allow);
+				HANDLE hProcess = NULL;
+				st = XHunter_OpenProcess(hClient, dwPid, PROCESS_ALL_ACCESS, &hProcess);
 				
-				if (!openRes.is_success() || openRes.value() == INVALID_HANDLE_VALUE) {
-					printf("Failed to open process, status: 0x%08X\n", openRes.status());
+				if (!NT_SUCCESS(st) || hProcess == INVALID_HANDLE_VALUE || hProcess == NULL) {
+					printf("Failed to open process, status: 0x%08X\n", st);
 					break;
 				}
 
-				HANDLE hProcess = openRes.value();
 				PUBLIC_OBJECT_BASIC_INFORMATION objectInformation;
 				ULONG objectInformationLength = sizeof(objectInformation);
 				CHAR szAccessRight[1000] = { 0 };
@@ -260,6 +262,7 @@ int main()
 				break;
 			}
 			case 7:
+				XHunter_Disconnect(hClient);
 				return 0;
 			default:
 				printf("Invalid option.\n");
@@ -270,5 +273,6 @@ int main()
 		_getch();
 	}
 
+	XHunter_Disconnect(hClient);
 	return 0;
 }

@@ -6,40 +6,33 @@
 
 #include <Windows.h>
 #include <stdint.h>
-#include <memory>
-#include <optional>
-#include <string>
-#include <filesystem>
+#include <stdbool.h>
 
 #ifndef STATUS_SUCCESS
 #define STATUS_SUCCESS ((NTSTATUS)0x00000000L)
 #endif
 
-#include "error.hpp"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-namespace xhunterapi
-{
-	enum class PidFlag : uint32_t {
-		Allow = 1,
-		Deny = 2,
-		Unprotect = 4,
-		Protected = 8,
-		ReportAuthenticated = 0x40000000,
-		ReportProcess = 0x80000000
-	};
+	typedef enum _PidFlag {
+		PidFlag_Allow = 1,
+		PidFlag_Deny = 2,
+		PidFlag_Unprotect = 4,
+		PidFlag_Protected = 8,
+		PidFlag_ReportAuthenticated = 0x40000000,
+		PidFlag_ReportProcess = 0x80000000
+	} PidFlag;
 
-	inline PidFlag operator|(PidFlag a, PidFlag b) {
-		return static_cast<PidFlag>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
-	}
-
-	enum class Opcode : uint32_t {
-		MapPid = 775,
-		RegisterReportReader = 777,
-		UnmapPid = 779,
-		SetHookState = 782,
-		OpenProcess = 785,
-		GetProtectFlag = 797
-	};
+	typedef enum _Opcode {
+		Opcode_MapPid = 775,
+		Opcode_RegisterReportReader = 777,
+		Opcode_UnmapPid = 779,
+		Opcode_SetHookState = 782,
+		Opcode_OpenProcess = 785,
+		Opcode_GetProtectFlag = 797
+	} Opcode;
 
 #pragma pack(push, 1)
 	struct ObjectHandleInfo
@@ -57,21 +50,21 @@ namespace xhunterapi
 
 	struct xhunter1_req_hdr
 	{
-		xhunter1_common_hdr common_hdr;
+		struct xhunter1_common_hdr common_hdr;
 		uint32_t pkt_opcode; //12
 		uint64_t pkt_res_buf; //20
 	};
 
 	struct xhunter1_req
 	{
-		xhunter1_req_hdr hdr;
-		char body[0x270 - sizeof(hdr)];
+		struct xhunter1_req_hdr hdr;
+		char body[0x270 - sizeof(struct xhunter1_req_hdr)];
 	};
 
 	//common response
 	struct xhunter1_common_res
 	{
-		xhunter1_common_hdr hdr;
+		struct xhunter1_common_hdr hdr;
 		DWORD dwStatus; //NTStatus from driver
 
 		union
@@ -82,7 +75,7 @@ namespace xhunterapi
 			DWORD dwMaxParameter;
 			UINT64 pPeb;
 
-			char body[0x2F6 - sizeof(hdr)];
+			char body[0x2F6 - sizeof(struct xhunter1_common_hdr) - sizeof(DWORD)];
 		};
 	};
 
@@ -115,45 +108,27 @@ namespace xhunterapi
 
 #pragma pack(pop)
 
-	// Replaced by xhunter::Result
+	// Opaque handle for XHunter API Context
+	typedef void* XH_HANDLE;
 
-	class XHunterClient {
-	public:
-		XHunterClient();
-		~XHunterClient();
+	// Connection / Lifecycle Methods
+	// Pass NULL for driverPath to use default "%windir%\nirvana.sys"
+	XH_HANDLE XHunter_Connect(const wchar_t* driverPath, bool exportDriver);
+	void XHunter_Disconnect(XH_HANDLE hClient);
+	int XHunter_GetLastError(XH_HANDLE hClient);
+	bool XHunter_IsRunning(XH_HANDLE hClient);
 
-		// Prevent copying
-		XHunterClient(const XHunterClient&) = delete;
-		XHunterClient& operator=(const XHunterClient&) = delete;
+	// API Methods
+	NTSTATUS XHunter_OpenProcess(XH_HANDLE hClient, DWORD dwProcessId, DWORD dwDesiredAccess, HANDLE* phProcess);
+	NTSTATUS XHunter_StartHandleHook(XH_HANDLE hClient);
+	NTSTATUS XHunter_StopHandleHook(XH_HANDLE hClient);
+	NTSTATUS XHunter_RegisterPid(XH_HANDLE hClient, DWORD dwPid, uint32_t flag);
+	NTSTATUS XHunter_UnregisterPid(XH_HANDLE hClient, DWORD dwPid);
+	NTSTATUS XHunter_GetProtectedProcessFlag(XH_HANDLE hClient, DWORD dwPid, DWORD* pFlag);
+	NTSTATUS XHunter_RegisterReportReader(XH_HANDLE hClient);
 
-		// Connection / Lifecycle Methods
-		bool Connect(std::filesystem::path driverPath = "%windir%\\nirvana.sys", bool exportDriver = true) noexcept;
-		void Disconnect() noexcept;
-		bool IsRunning() const noexcept;
-		int GetLastError() const noexcept;
-
-		// API Methods
-		xhunter::Result<HANDLE> OpenProcess(DWORD dwProcessId, DWORD dwDesiredAccess) noexcept;
-		xhunter::Result<void> StartHandleHook() noexcept;
-		xhunter::Result<void> StopHandleHook() noexcept;
-		xhunter::Result<void> RegisterPid(DWORD dwPid, PidFlag flag) noexcept;
-		xhunter::Result<void> UnregisterPid(DWORD dwPid) noexcept;
-		xhunter::Result<DWORD> GetProtectedProcessFlag(DWORD dwPid) noexcept;
-		xhunter::Result<void> RegisterReportReader() noexcept;
-
-	private:
-		HANDLE m_hDriver;
-		int m_lastError;
-		bool m_selfRun;
-
-		std::wstring m_serviceName;
-		std::wstring m_driverPath;
-
-		std::unique_ptr<xhunter1_common_res> SendPacket(Opcode opcode, const void* body, size_t body_len) noexcept;
-
-		// Utility Helpers
-		bool ExportDriver(const std::wstring& path) const noexcept;
-	};
+#ifdef __cplusplus
 }
+#endif
 
 #endif

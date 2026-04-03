@@ -75,7 +75,7 @@ extern "C" {
 			DWORD dwMaxParameter;
 			UINT64 pPeb;
 
-			char body[0x2F6 - sizeof(struct xhunter1_common_hdr) - sizeof(DWORD)];
+			char body[0x2F6 - sizeof(struct xhunter1_common_hdr)];
 		};
 	};
 

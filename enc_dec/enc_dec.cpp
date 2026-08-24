@@ -1,88 +1,96 @@
-// enc_dec.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// enc_dec.cpp : Utility tool to encode binary files into C++ header files.
 //
 
 #include <iostream>
 #include <filesystem>
 #include <fstream>
 #include <format>
+#include <vector>
+#include <algorithm>
+#include <cstring>
+#include <cstdint>
 
-int main(int argc, char* argv[]) {
-	//for (int i = 1; i < argc; i++) {
-	//	printf("%s\n", argv[i]);
-	//}
+namespace fs = std::filesystem;
 
-	//system("pause");
-	//return 1;
+static void process_file(const fs::path& path) {
+	std::ifstream f(path, std::ios::binary | std::ios::ate);
+	if (!f.is_open()) {
+		std::cerr << std::format("[-] Failed to open: {}\n", path.string());
+		return;
+	}
 
-	for (int i = 1; i < argc; i++) {
-		std::string result;
+	const auto file_size = f.tellg();
+	if (file_size <= 0) {
+		std::cerr << std::format("[-] Invalid or empty file: {}\n", path.string());
+		return;
+	}
 
-		std::filesystem::path path(argv[i]);
+	std::vector<uint8_t> data(static_cast<size_t>(file_size));
+	f.seekg(0, std::ios::beg);
+	f.read(reinterpret_cast<char*>(data.data()), data.size());
+	f.close();
 
-		std::ifstream f(path, std::ios::binary);
+	std::string filename = path.stem().string();
+	std::string ext = path.has_extension() ? path.extension().string().substr(1) : "";
+	std::replace(filename.begin(), filename.end(), '.', '_');
 
-		if (f.is_open()) {
-			std::string filename = path.stem().string();
-			std::string ext = path.extension().string();
-			std::string varname = filename;
+	std::string upper_filename = filename;
+	std::string upper_ext = ext;
+	std::transform(upper_filename.begin(), upper_filename.end(), upper_filename.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+	std::transform(upper_ext.begin(), upper_ext.end(), upper_ext.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
 
-			std::replace(filename.begin(), filename.end(), '.', '_');
-			std::replace(varname.begin(), varname.end(), '.', '_');
-			ext.erase(0, 1); // Remove the leading dot from the extension
+	const size_t data_size = data.size();
+	const size_t slot_count = data_size / 4;
+	const size_t remainder = data_size % 4;
+	const size_t total_slots = slot_count + (remainder ? 1 : 0);
 
-			std::string upper_filename = filename;
-			std::string upper_ext = ext;
-			std::string upper_varname = varname;
+	std::string result = "#pragma once\n\n";
+	result += std::format("inline constexpr unsigned int {}_{}_SIZE = {};\n\n", upper_filename, upper_ext, data_size);
+	result += std::format("inline constexpr unsigned int {}_{}_DATA[{}] = {{", upper_filename, upper_ext, total_slots);
 
-			std::transform(upper_filename.begin(), upper_filename.end(), upper_filename.begin(), [](unsigned char c) { return std::toupper(c); });
-			std::transform(upper_ext.begin(), upper_ext.end(), upper_ext.begin(), [](unsigned char c) { return std::toupper(c); });
-			std::transform(upper_varname.begin(), upper_varname.end(), upper_varname.begin(), [](unsigned char c) { return std::toupper(c); });
-
-			std::string data;
-			f.seekg(0, std::ios::end);
-			data.resize(f.tellg());
-			f.seekg(0, std::ios::beg);
-			f.read(&data[0], data.size());
-			f.close();
-
-			const size_t dataSize = data.size();
-			const size_t slotSize = dataSize / 4;
-			const size_t remainderSize = dataSize % 4;
-			const size_t totalSlotSize = slotSize + (remainderSize ? 1 : 0);
-
-			result = "#pragma once\n\n";
-
-			result += std::format("static const unsigned int {}_{}_SIZE = {};\n\n", upper_filename, upper_ext, data.size());
-
-			result += std::format("static const unsigned int {}_{}_DATA[{}] = {{", upper_filename, upper_ext, totalSlotSize);
-
-			for (size_t i = 0; i < slotSize; i += 4) {
-				result += "\n\t";
-
-				for (size_t l = 0; l < std::min<size_t>(slotSize - i, 4); l++) {
-					result += std::format("0x{:08x}, ", *(uint32_t*)(&data[i * 4 + l * 4]) ^ 0xFFFFFFFF);
-				}
-			}
-
-			if (remainderSize != 0) {
-				uint32_t v = 0;
-
-				if (slotSize % 4 == 0)
-					result += "\n\t";
-
-				for (size_t i = 0; i < remainderSize; i++)
-					v |= ((uint32_t)(uint8_t)data[data.size() - remainderSize + i]) << (i * 8);
-
-				result += std::format("0x{:08x}", (uint32_t)v ^ 0xFFFFFFFF);
-			}
-
-			result += "\n};";
-
-			std::ofstream out(std::format("{}\\{}_{}_bin.h", path.parent_path().string(), filename, ext));
-			if (out.is_open()) {
-				out << result;
-				out.close();
-			}
+	for (size_t i = 0; i < slot_count; i += 4) {
+		result += "\n\t";
+		const size_t chunk = std::min<size_t>(slot_count - i, 4);
+		for (size_t l = 0; l < chunk; l++) {
+			uint32_t val = 0;
+			std::memcpy(&val, &data[(i + l) * 4], sizeof(val));
+			result += std::format("0x{:08x}, ", val ^ 0xFFFFFFFF);
 		}
 	}
+
+	if (remainder != 0) {
+		if (slot_count % 4 == 0) {
+			result += "\n\t";
+		}
+		uint32_t val = 0;
+		for (size_t i = 0; i < remainder; i++) {
+			val |= static_cast<uint32_t>(data[data_size - remainder + i]) << (i * 8);
+		}
+		result += std::format("0x{:08x}", val ^ 0xFFFFFFFF);
+	}
+
+	result += "\n};\n";
+
+	const fs::path out_path = path.parent_path() / std::format("{}_{}_bin.h", filename, ext);
+	std::ofstream out(out_path, std::ios::trunc);
+	if (out.is_open()) {
+		out << result;
+		out.close();
+		std::cout << std::format("[+] Generated: {}\n", out_path.string());
+	} else {
+		std::cerr << std::format("[-] Failed to write output: {}\n", out_path.string());
+	}
+}
+
+int main(int argc, char* argv[]) {
+	if (argc < 2) {
+		std::cout << "Usage: enc_dec <file1> [file2 ...]\n";
+		return 1;
+	}
+
+	for (int i = 1; i < argc; i++) {
+		process_file(argv[i]);
+	}
+
+	return 0;
 }

@@ -167,7 +167,7 @@ int main()
 			{
 				DWORD dwPid = 0;
 				printf("Enter Process ID: "); scanf_s("%lu", &dwPid);
-				auto res = client.RegisterPid(dwPid, PidFlag::Allow);
+				auto res = client.RegisterPid(dwPid, PidFlag::FlagAllow);
 				if (res.is_success()) {
 					printf("Complete!\n");
 				} else {
@@ -177,10 +177,10 @@ int main()
 			}
 			case 4:
 			{
-				client.RegisterPid(GetCurrentProcessId(), PidFlag::Protected);
+				client.RegisterPid(GetCurrentProcessId(), PidFlag::FlagProtected);
 				DWORD dwPid = 0;
 				printf("Enter Process ID: "); scanf_s("%lu", &dwPid);
-				auto res = client.RegisterPid(dwPid, PidFlag::Protected);
+				auto res = client.RegisterPid(dwPid, PidFlag::FlagProtected);
 				if (res.is_success()) {
 					printf("Complete!\n");
 				} else {
@@ -205,7 +205,7 @@ int main()
 				DWORD dwPid = 0;
 				printf("Enter Process ID: "); scanf_s("%lu", &dwPid);
 				
-				client.RegisterPid(GetCurrentProcessId(), PidFlag::Protected | PidFlag::Allow);
+				client.RegisterPid(GetCurrentProcessId(), PidFlag::FlagProtected | PidFlag::FlagAllow);
 				auto openRes = client.OpenProcess(dwPid, PROCESS_ALL_ACCESS);
 				
 				if (!openRes.is_success() || openRes.value() == INVALID_HANDLE_VALUE) {

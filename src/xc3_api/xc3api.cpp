@@ -230,7 +230,7 @@ namespace xc3api {
 		handle_req.dwProcessId = dwProcessId;
 		handle_req.dwDesiredAccess = dwDesiredAccess;
 
-		auto res_packet = SendPacket(Opcode::OpenProcess, &handle_req, sizeof(xhunter1_proc_handle_req));
+		auto res_packet = SendPacket(Opcode::OpOpenProcess, &handle_req, sizeof(xhunter1_proc_handle_req));
 
 		if (!res_packet) {
 			X_FAIL_MSG(XSA("Failed to send OpenProcess packet"));
@@ -250,7 +250,7 @@ namespace xc3api {
 		xhunter1_proc_sethookstate hookstate_req = { 0 };
 		hookstate_req.byHookState = 1;
 
-		auto res_packet = SendPacket(Opcode::SetHookState, &hookstate_req, sizeof(xhunter1_proc_sethookstate));
+		auto res_packet = SendPacket(Opcode::OpSetHookState, &hookstate_req, sizeof(xhunter1_proc_sethookstate));
 		if (!res_packet) {
 			X_FAIL_MSG(XSA("Failed to send StartHandleHook packet"));
 		}
@@ -268,7 +268,7 @@ namespace xc3api {
 		xhunter1_proc_sethookstate hookstate_req = { 0 };
 		hookstate_req.byHookState = 0;
 
-		auto res_packet = SendPacket(Opcode::SetHookState, &hookstate_req, sizeof(xhunter1_proc_sethookstate));
+		auto res_packet = SendPacket(Opcode::OpSetHookState, &hookstate_req, sizeof(xhunter1_proc_sethookstate));
 		if (!res_packet) {
 			X_FAIL_MSG(XSA("Failed to send StopHandleHook packet"));
 		}
@@ -288,7 +288,7 @@ namespace xc3api {
 		pidmap_req.pid = dwPid;
 		pidmap_req.type = static_cast<ULONG>(flag);
 
-		auto res_packet = SendPacket(Opcode::MapPid, &pidmap_req, sizeof(PIDMAP_PARAM));
+		auto res_packet = SendPacket(Opcode::OpMapPid, &pidmap_req, sizeof(PIDMAP_PARAM));
 		if (!res_packet) {
 			X_FAIL_MSG(XSA("Failed to send RegisterPid packet"));
 		}
@@ -306,7 +306,7 @@ namespace xc3api {
 		PIDREMOVE_PARAM pidremove_req = { 0 };
 		pidremove_req.pid = dwPid;
 
-		auto res_packet = SendPacket(Opcode::ClearPidFlags, &pidremove_req, sizeof(PIDREMOVE_PARAM));
+		auto res_packet = SendPacket(Opcode::OpClearPidFlags, &pidremove_req, sizeof(PIDREMOVE_PARAM));
 		if (!res_packet) {
 			X_FAIL_MSG(XSA("Failed to send UnregisterPid packet"));
 		}
@@ -324,7 +324,7 @@ namespace xc3api {
 		xhunter1_proc_GetProcessProtectFlag_req protect_req = { 0 };
 		protect_req.pid = dwPid;
 
-		auto res_packet = SendPacket(Opcode::GetProtectFlag, &protect_req, sizeof(xhunter1_proc_GetProcessProtectFlag_req));
+		auto res_packet = SendPacket(Opcode::OpGetProtectFlag, &protect_req, sizeof(xhunter1_proc_GetProcessProtectFlag_req));
 
 		if (!res_packet) {
 			X_FAIL_MSG(XSA("Failed to send GetProtectedProcessFlag packet"));
@@ -345,7 +345,7 @@ namespace xc3api {
 		xhunter1_proc_GetProcessProtectFlag_req protect_req = { 0 };
 		protect_req.pid = 0;
 
-		auto res_packet = SendPacket(Opcode::RegisterReportReader, &protect_req, sizeof(xhunter1_proc_GetProcessProtectFlag_req));
+		auto res_packet = SendPacket(Opcode::OpRegisterReportReader, &protect_req, sizeof(xhunter1_proc_GetProcessProtectFlag_req));
 		if (!res_packet) {
 			X_FAIL_MSG(XSA("Failed to send RegisterReportReader packet"));
 		}
@@ -366,7 +366,7 @@ namespace xc3api {
 		}
 
 		const DWORD self_pid = GetCurrentProcessId();
-		auto res_map = RegisterPid(self_pid, PidFlag::Protected);
+		auto res_map = RegisterPid(self_pid, PidFlag::FlagProtected);
 		if (!res_map) {
 			return res_map;
 		}
@@ -386,7 +386,7 @@ namespace xc3api {
 		req.dstUserVa = reinterpret_cast<uint64_t>(dstUserVa);
 		req.size = size;
 
-		auto res_packet = SendPacket(Opcode::ReadKernelMemory, &req, sizeof(xhunter1_proc_ReadKernelMemory_req));
+		auto res_packet = SendPacket(Opcode::OpReadKernelMemory, &req, sizeof(xhunter1_proc_ReadKernelMemory_req));
 		if (!res_packet) {
 			X_FAIL_MSG(XSA("Failed to send ReadKernelMemory packet"));
 		}
@@ -411,7 +411,7 @@ namespace xc3api {
 		req.dstUserVa = reinterpret_cast<uint64_t>(dstUserVa);
 		req.size = size;
 
-		auto res_packet = SendPacket(Opcode::ReadProcessMemory, &req, sizeof(xhunter1_proc_ReadProcessMemory_req));
+		auto res_packet = SendPacket(Opcode::OpReadProcessMemory, &req, sizeof(xhunter1_proc_ReadProcessMemory_req));
 		if (!res_packet) {
 			X_FAIL_MSG(XSA("Failed to send ReadProcessMemory packet"));
 		}

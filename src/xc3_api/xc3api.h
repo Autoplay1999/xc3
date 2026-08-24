@@ -4,6 +4,13 @@
 #ifndef XC3_API_H
 #define XC3_API_H
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <Windows.h>
 #include <stdint.h>
 #include <memory>
@@ -20,12 +27,12 @@
 namespace xc3api
 {
 	enum class PidFlag : uint32_t {
-		Allow = 1,
-		Deny = 2,
-		Unprotect = 4,
-		Protected = 8,
-		ReportAuthenticated = 0x40000000,
-		ReportProcess = 0x80000000
+		FlagAllow = 1,
+		FlagDeny = 2,
+		FlagUnprotect = 4,
+		FlagProtected = 8,
+		FlagReportAuthenticated = 0x40000000,
+		FlagReportProcess = 0x80000000
 	};
 
 	inline PidFlag operator|(PidFlag a, PidFlag b) {
@@ -33,26 +40,26 @@ namespace xc3api
 	}
 
 	enum class Opcode : uint32_t {
-		Ping = 774,
-		MapPid = 775,
-		ClearPidFlags = 776,
-		RegisterReportReader = 777,
-		UnregisterReportReader = 778,
-		EnumTrustedPids = 779,
-		SetHookState = 782,
-		QueryVersion = 783,
-		OpenProcess = 785,
-		QueryCounter = 786,
-		ReadProcessMemory = 787,
-		ReadKernelMemory = 788,
-		QueryProcessInformation = 791,
-		GetProtectFlag = 797,
-		CloseRemoteHandle = 800,
-		InitWin32k = 801,
-		QueryPte = 805,
-		CreateKernelFile = 810,
-		PopulateTrustCache = 813,
-		InjectShellcode = 820
+		OpPing = 774,
+		OpMapPid = 775,
+		OpClearPidFlags = 776,
+		OpRegisterReportReader = 777,
+		OpUnregisterReportReader = 778,
+		OpEnumTrustedPids = 779,
+		OpSetHookState = 782,
+		OpQueryVersion = 783,
+		OpOpenProcess = 785,
+		OpQueryCounter = 786,
+		OpReadProcessMemory = 787,
+		OpReadKernelMemory = 788,
+		OpQueryProcessInformation = 791,
+		OpGetProtectFlag = 797,
+		OpCloseRemoteHandle = 800,
+		OpInitWin32k = 801,
+		OpQueryPte = 805,
+		OpCreateKernelFile = 810,
+		OpPopulateTrustCache = 813,
+		OpInjectShellcode = 820
 	};
 
 #pragma pack(push, 1)

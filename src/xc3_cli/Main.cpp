@@ -1,4 +1,4 @@
-#include <phnt_windows.h>
+﻿#include <phnt_windows.h>
 #include <phnt.h>
 
 #include <stdio.h>
@@ -7,8 +7,11 @@
 #include <psapi.h>
 #include <tchar.h>
 #include <string>
+#include <vector>
 #include <TlHelp32.h>
 #include <iostream>
+#include <iomanip>
+#include <filesystem>
 
 #include "../xc3_api/xc3api.h"
 
@@ -89,15 +92,59 @@ bool AssignDebugPrivileges()
 	return debugPrivProcess && debugPrivThread;
 }
 
+void HexDump(const void* data, size_t size, uint64_t baseAddress)
+{
+	const uint8_t* p = reinterpret_cast<const uint8_t*>(data);
+	for (size_t i = 0; i < size; i += 16) {
+		printf("%016llX: ", baseAddress + i);
+		
+		for (size_t j = 0; j < 16; j++) {
+			if (i + j < size)
+				printf("%02X ", p[i + j]);
+			else
+				printf("   ");
+			if (j == 7) printf(" ");
+		}
+		
+		printf(" |");
+		for (size_t j = 0; j < 16; j++) {
+			if (i + j < size) {
+				uint8_t c = p[i + j];
+				printf("%c", (c >= 32 && c <= 126) ? c : '.');
+			}
+		}
+		printf("|\n");
+	}
+}
+
 int main()
 {
 	SetConsoleTitleA("XC3 CLI");
 
+	std::filesystem::path driverPath = "%windir%\\nirvana.sys";
+	bool exportDriver = true;
+
+	std::string inputPath;
+	std::cout << "Enter driver path [Default: %windir%\\nirvana.sys]: ";
+	std::getline(std::cin, inputPath);
+	if (!inputPath.empty()) {
+		driverPath = inputPath;
+	}
+
+	std::string inputExport;
+	std::cout << "Export driver? (Y/n) [Default: Y]: ";
+	std::getline(std::cin, inputExport);
+	if (!inputExport.empty()) {
+		if (inputExport[0] == 'n' || inputExport[0] == 'N' || inputExport[0] == '0') {
+			exportDriver = false;
+		}
+	}
+
 	XC3Client client;
 
-	if (!client.Connect())
+	if (!client.Connect(driverPath, exportDriver))
 	{
-		printf("[-] Failed to get a handle to xhunter1. Is the driver loaded? Client Error = %d\n", client.GetLastError());
+		printf("[-] Failed to get a handle to driver. Is the driver loaded? Client Error = %d\n", client.GetLastError());
 		_getch();
 		return -1;
 	}
@@ -127,7 +174,9 @@ int main()
 		printf("04. Add Protected Process\n");
 		printf("05. Check Protected Flag From PID\n");
 		printf("06. Kernel OpenProcess\n");
-		printf("07. Exit\n");
+		printf("07. Read Process Memory (Kernel)\n");
+		printf("08. Read Kernel Memory (Direct VA)\n");
+		printf("09. Exit\n");
 
 		int iSelect = 0;
 		printf("Choose: ");
@@ -260,6 +309,56 @@ int main()
 				break;
 			}
 			case 7:
+			{
+				DWORD dwPid = 0;
+				uint64_t targetAddress = 0;
+				uint32_t readSize = 64;
+
+				printf("Enter Process ID: "); scanf_s("%lu", &dwPid);
+				printf("Enter Address (hex, e.g. 7FF712340000): "); scanf_s("%llx", &targetAddress);
+				printf("Enter Size in bytes (default 64): "); scanf_s("%u", &readSize);
+				if (readSize == 0 || readSize > 0x100000) readSize = 64;
+
+				client.RegisterPid(GetCurrentProcessId(), PidFlag::FlagProtected | PidFlag::FlagAllow);
+				auto openRes = client.OpenProcess(dwPid, PROCESS_VM_READ | PROCESS_QUERY_INFORMATION);
+				if (!openRes.is_success() || openRes.value() == INVALID_HANDLE_VALUE) {
+					printf("Failed to open process, status: 0x%08X\n", openRes.status());
+					break;
+				}
+
+				HANDLE hProcess = openRes.value();
+				std::vector<uint8_t> buffer(readSize, 0);
+				auto readRes = client.ReadProcessMemory(hProcess, targetAddress, buffer.data(), readSize);
+				if (readRes.is_success()) {
+					printf("[+] Successfully read %u bytes:\n\n", readSize);
+					HexDump(buffer.data(), readSize, targetAddress);
+				} else {
+					printf("[-] ReadProcessMemory failed, status: 0x%08X\n", readRes.status());
+				}
+
+				CloseHandle(hProcess);
+				break;
+			}
+			case 8:
+			{
+				uint64_t kernelVa = 0;
+				uint32_t readSize = 64;
+
+				printf("Enter Kernel VA (hex, e.g. FFFFF80012345678): "); scanf_s("%llx", &kernelVa);
+				printf("Enter Size in bytes (default 64): "); scanf_s("%u", &readSize);
+				if (readSize == 0 || readSize > 0x100000) readSize = 64;
+
+				std::vector<uint8_t> buffer(readSize, 0);
+				auto readRes = client.ReadKernelMemory(kernelVa, buffer.data(), readSize);
+				if (readRes.is_success()) {
+					printf("[+] Successfully read %u kernel bytes:\n\n", readSize);
+					HexDump(buffer.data(), readSize, kernelVa);
+				} else {
+					printf("[-] ReadKernelMemory failed, status: 0x%08X\n", readRes.status());
+				}
+				break;
+			}
+			case 9:
 				return 0;
 			default:
 				printf("Invalid option.\n");

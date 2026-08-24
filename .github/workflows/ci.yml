@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build & Test (${{ matrix.platform }} - ${{ matrix.config }})
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [x64, Win32]
+        config: [Release, Debug]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Configure CMake
+        run: >
+          cmake -B build
+          -S .
+          -A ${{ matrix.platform }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+
+      - name: Build Project
+        run: >
+          cmake --build build
+          --config ${{ matrix.config }}
+
+      - name: Run Tests
+        run: |
+          .\bin\${{ matrix.config }}\enc_dec.exe --test
+
+      - name: Prepare Artifacts Directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "artifacts\lib" | Out-Null
+          New-Item -ItemType Directory -Force -Path "artifacts\bin" | Out-Null
+          New-Item -ItemType Directory -Force -Path "artifacts\include" | Out-Null
+
+          Copy-Item -Path "bin\${{ matrix.config }}\*.lib" -Destination "artifacts\lib" -ErrorAction SilentlyContinue
+          Copy-Item -Path "bin\${{ matrix.config }}\*.exe" -Destination "artifacts\bin" -ErrorAction SilentlyContinue
+          Copy-Item -Path "bin\${{ matrix.config }}\*.pdb" -Destination "artifacts\bin" -ErrorAction SilentlyContinue
+          Copy-Item -Path "xhunter_sdk_lib\*.h" -Destination "artifacts\include" -ErrorAction SilentlyContinue
+          Copy-Item -Path "xhunter_sdk_lib\*.hpp" -Destination "artifacts\include" -ErrorAction SilentlyContinue
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: xhunter_sdk-${{ matrix.platform }}-${{ matrix.config }}
+          path: artifacts/
+          if-no-files-found: error

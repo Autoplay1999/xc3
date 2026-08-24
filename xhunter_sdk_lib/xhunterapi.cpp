@@ -1,20 +1,16 @@
 #include <phnt_windows.h>
 #include <phnt.h>
 
-#include <stdio.h>
-#include <conio.h>
-#include <strsafe.h>
-
 #include <string>
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <functional>
+#include <span>
 
 #include <xorstr.hpp>
 #include <vmp/VMProtectSDK.h>
 #include <nirvana/std_format_ext.h>
-#include <misc/crypto.h>
 
 #include "util.hpp"
 
@@ -133,8 +129,7 @@ namespace xhunterapi {
 				f.read(&xhunter_data[0], xhunter_data.size());
 				f.close();
 
-				auto sum = crypto::hash(XSW("SHA512"), xhunter_data);
-				auto sum_hex = crypto::bin2hex(sum);
+				auto sum_hex = util::crypto::sha512_hex(std::as_bytes(std::span(xhunter_data)));
 
 				if (sum_hex != XSA("596d8a02a4dfbb0e71a985a8ef2b01242762bb518b60b0f23f83f1ac15dbf2619b1a1e8c93316e06f25ac989469aa3f5f5edfbdf2c4979394e68b6ab9d726d65")) {
 					std::filesystem::remove(driverPath);

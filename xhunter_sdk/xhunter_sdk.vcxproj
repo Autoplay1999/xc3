@@ -192,73 +192,73 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Clang|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Clang|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_VMProtect|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Clang|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Clang_VMProtect|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_VMProtect|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Clang|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Clang_VMProtect|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <IncludePath>$(basesdk_dir)\phnt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

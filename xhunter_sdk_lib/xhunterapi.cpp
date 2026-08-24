@@ -311,7 +311,7 @@ namespace xhunterapi {
 		PIDREMOVE_PARAM pidremove_req = { 0 };
 		pidremove_req.pid = dwPid;
 
-		auto res_packet = SendPacket(Opcode::UnmapPid, &pidremove_req, sizeof(PIDREMOVE_PARAM));
+		auto res_packet = SendPacket(Opcode::ClearPidFlags, &pidremove_req, sizeof(PIDREMOVE_PARAM));
 		if (!res_packet) {
 			X_FAIL_MSG(XSA("Failed to send UnregisterPid packet"));
 		}
@@ -357,6 +357,72 @@ namespace xhunterapi {
 
 		if (res_packet->dwStatus != STATUS_SUCCESS) {
 			X_FAIL(res_packet->dwStatus, XSA("Driver rejected RegisterReportReader request"));
+		}
+
+		VMP_END();
+		return {};
+	}
+
+	xhunter::Result<void> XHunterClient::AuthenticateCaller() noexcept {
+		VMP_BEGIN_MUTATION(__FUNCTION__);
+		auto res_reg = RegisterReportReader();
+		if (!res_reg) {
+			return res_reg;
+		}
+
+		const DWORD self_pid = GetCurrentProcessId();
+		auto res_map = RegisterPid(self_pid, PidFlag::Protected);
+		if (!res_map) {
+			return res_map;
+		}
+
+		VMP_END();
+		return {};
+	}
+
+	xhunter::Result<void> XHunterClient::ReadKernelMemory(uint64_t srcKernelVa, void* dstUserVa, uint32_t size) noexcept {
+		VMP_BEGIN_MUTATION(__FUNCTION__);
+		if (!dstUserVa || !size) {
+			X_FAIL_MSG(XSA("Invalid arguments for ReadKernelMemory"));
+		}
+
+		xhunter1_proc_ReadKernelMemory_req req = { 0 };
+		req.srcKernelVa = srcKernelVa;
+		req.dstUserVa = reinterpret_cast<uint64_t>(dstUserVa);
+		req.size = size;
+
+		auto res_packet = SendPacket(Opcode::ReadKernelMemory, &req, sizeof(xhunter1_proc_ReadKernelMemory_req));
+		if (!res_packet) {
+			X_FAIL_MSG(XSA("Failed to send ReadKernelMemory packet"));
+		}
+
+		if (res_packet->dwStatus != STATUS_SUCCESS) {
+			X_FAIL(res_packet->dwStatus, XSA("Driver rejected ReadKernelMemory request"));
+		}
+
+		VMP_END();
+		return {};
+	}
+
+	xhunter::Result<void> XHunterClient::ReadProcessMemory(HANDLE hProcess, uint64_t srcUserVa, void* dstUserVa, uint32_t size) noexcept {
+		VMP_BEGIN_MUTATION(__FUNCTION__);
+		if (!hProcess || !dstUserVa || !size) {
+			X_FAIL_MSG(XSA("Invalid arguments for ReadProcessMemory"));
+		}
+
+		xhunter1_proc_ReadProcessMemory_req req = { 0 };
+		req.hProcess = hProcess;
+		req.srcUserVa = srcUserVa;
+		req.dstUserVa = reinterpret_cast<uint64_t>(dstUserVa);
+		req.size = size;
+
+		auto res_packet = SendPacket(Opcode::ReadProcessMemory, &req, sizeof(xhunter1_proc_ReadProcessMemory_req));
+		if (!res_packet) {
+			X_FAIL_MSG(XSA("Failed to send ReadProcessMemory packet"));
+		}
+
+		if (res_packet->dwStatus != STATUS_SUCCESS) {
+			X_FAIL(res_packet->dwStatus, XSA("Driver rejected ReadProcessMemory request"));
 		}
 
 		VMP_END();

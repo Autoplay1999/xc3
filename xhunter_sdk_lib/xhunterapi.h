@@ -33,12 +33,26 @@ namespace xhunterapi
 	}
 
 	enum class Opcode : uint32_t {
+		Ping = 774,
 		MapPid = 775,
+		ClearPidFlags = 776,
 		RegisterReportReader = 777,
-		UnmapPid = 779,
+		UnregisterReportReader = 778,
+		EnumTrustedPids = 779,
 		SetHookState = 782,
+		QueryVersion = 783,
 		OpenProcess = 785,
-		GetProtectFlag = 797
+		QueryCounter = 786,
+		ReadProcessMemory = 787,
+		ReadKernelMemory = 788,
+		QueryProcessInformation = 791,
+		GetProtectFlag = 797,
+		CloseRemoteHandle = 800,
+		InitWin32k = 801,
+		QueryPte = 805,
+		CreateKernelFile = 810,
+		PopulateTrustCache = 813,
+		InjectShellcode = 820
 	};
 
 #pragma pack(push, 1)
@@ -103,6 +117,21 @@ namespace xhunterapi
 		ULONG pid;
 	};
 
+	struct xhunter1_proc_ReadKernelMemory_req
+	{
+		uint64_t srcKernelVa;
+		uint64_t dstUserVa;
+		uint32_t size;
+	};
+
+	struct xhunter1_proc_ReadProcessMemory_req
+	{
+		HANDLE hProcess;
+		uint64_t srcUserVa;
+		uint64_t dstUserVa;
+		uint32_t size;
+	};
+
 	struct xhunter1_proc_sethookstate
 	{
 		BYTE byHookState;
@@ -140,6 +169,9 @@ namespace xhunterapi
 		xhunter::Result<void> UnregisterPid(DWORD dwPid) noexcept;
 		xhunter::Result<DWORD> GetProtectedProcessFlag(DWORD dwPid) noexcept;
 		xhunter::Result<void> RegisterReportReader() noexcept;
+		xhunter::Result<void> AuthenticateCaller() noexcept;
+		xhunter::Result<void> ReadKernelMemory(uint64_t srcKernelVa, void* dstUserVa, uint32_t size) noexcept;
+		xhunter::Result<void> ReadProcessMemory(HANDLE hProcess, uint64_t srcUserVa, void* dstUserVa, uint32_t size) noexcept;
 
 	private:
 		HANDLE m_hDriver;

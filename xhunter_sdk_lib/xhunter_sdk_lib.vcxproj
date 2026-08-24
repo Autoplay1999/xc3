@@ -192,73 +192,73 @@
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)_x86_debug</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Clang|Win32'">
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)_x86_clang_debug</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)_x86</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_VMProtect|Win32'">
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)_x86_vmp</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Clang|Win32'">
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)_x86_clang</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Clang_VMProtect|Win32'">
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)_x86_clang_vmp</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <TargetName>$(ProjectName)_x64_debug</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Clang|x64'">
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <TargetName>$(ProjectName)_x64_clang_debug</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <TargetName>$(ProjectName)_x64</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_VMProtect|x64'">
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <TargetName>$(ProjectName)_x64_vmp</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Clang|x64'">
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <TargetName>$(ProjectName)_x64_clang</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Clang_VMProtect|x64'">
     <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <TargetName>$(ProjectName)_x64_clang_vmp</TargetName>
-    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\deps\systeminformer\phnt\include;$(ProjectDir)..\deps\xorstr;$(ProjectDir)..\deps\nirvana;$(ProjectDir)..\deps\vmp;$(ProjectDir)..\deps\neargye\scope_guard\include;$(ProjectDir)..\deps\neargye\magic_enum\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

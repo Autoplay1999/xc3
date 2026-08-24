@@ -2,3 +2,11 @@
 	path = deps/systeminformer
 	url = https://github.com/winsiderss/systeminformer.git
 	branch = master
+[submodule "deps/neargye/scope_guard"]
+	path = deps/neargye/scope_guard
+	url = https://github.com/Neargye/scope_guard.git
+	branch = master
+[submodule "deps/neargye/magic_enum"]
+	path = deps/neargye/magic_enum
+	url = https://github.com/Neargye/magic_enum.git
+	branch = master

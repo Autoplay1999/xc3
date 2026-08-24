@@ -33,7 +33,8 @@ set(PHNT_INCLUDE_DIR ${DEPS_DIR}/systeminformer/phnt/include)
 set(XORSTR_INCLUDE_DIR ${DEPS_DIR}/xorstr)
 set(NIRVANA_INCLUDE_DIR ${DEPS_DIR}/nirvana)
 set(VMP_INCLUDE_DIR ${DEPS_DIR}/vmp)
-set(NEARGYE_INCLUDE_DIR ${DEPS_DIR}/neargye)
+set(SCOPE_GUARD_INCLUDE_DIR ${DEPS_DIR}/neargye/scope_guard/include)
+set(MAGIC_ENUM_INCLUDE_DIR ${DEPS_DIR}/neargye/magic_enum/include)
 
 # ------------------------------------------------------------------------------
 # 1. Target: enc_dec (Binary header encoder tool + tests)
@@ -64,7 +65,8 @@ target_include_directories(xhunter_sdk_lib PUBLIC
     ${XORSTR_INCLUDE_DIR}
     ${NIRVANA_INCLUDE_DIR}
     ${VMP_INCLUDE_DIR}
-    ${NEARGYE_INCLUDE_DIR}
+    ${SCOPE_GUARD_INCLUDE_DIR}
+    ${MAGIC_ENUM_INCLUDE_DIR}
 )
 
 target_link_libraries(xhunter_sdk_lib PUBLIC

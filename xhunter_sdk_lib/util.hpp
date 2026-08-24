@@ -8,7 +8,7 @@
 #include <vector>
 #include <format>
 #include <nirvana/std_format_ext.h>
-#include <scope_guard/scope_guard.hpp>
+#include <scope_guard.hpp>
 #include <xorstr.hpp>
 #include <vmp/VMProtectSDK.h>
 

@@ -7,10 +7,10 @@
 #include <string>
 #include <vector>
 #include <format>
-#include <nirvana/std_format_ext.h>
+#include <std_format_ext.h>
 #include <scope_guard.hpp>
 #include <xorstr.hpp>
-#include <vmp/VMProtectSDK.h>
+#include <VMProtectSDK.h>
 
 #include "error.hpp"
 
@@ -336,7 +336,7 @@ namespace util {
         return NT_SUCCESS(status);
     }
 
-    inline xhunter::Result<void> load_driver_nt(std::wstring_view serviceName, std::wstring_view driverPath) {
+    inline xc3::Result<void> load_driver_nt(std::wstring_view serviceName, std::wstring_view driverPath) {
         VMP_BEGIN_MUTATION("ljSjtwzkVR3ahHaDNSs73kZefoCYzKgI42YcWdq3JlGmbxi6nZeHrs3YpetI2lYg");
         if (!create_service_registry(serviceName, driverPath)) {
             X_FAIL_MSG(XSA("Failed to create driver entry in registry"));
@@ -358,7 +358,7 @@ namespace util {
         return {};
     }
 
-    inline xhunter::Result<void> unload_driver_nt(const std::wstring& serviceName, std::wstring_view driverPath) {
+    inline xc3::Result<void> unload_driver_nt(const std::wstring& serviceName, std::wstring_view driverPath) {
         VMP_BEGIN_MUTATION("6cO06W8iBW0HPbLCKX5qd9wkqDsxh24zyJ8dxLz5pqRb6KcfEO0ctgxHOvIfLSTe");
         if (!create_service_registry(serviceName, driverPath)) {
             X_FAIL_MSG(XSA("Failed to create driver registry keys for unload"));

@@ -2,7 +2,7 @@
 //
 
 #define DOCTEST_CONFIG_IMPLEMENT
-#include "doctest.h"
+#include <doctest/doctest.h>
 
 #include <iostream>
 #include <filesystem>
@@ -69,16 +69,16 @@ static EncodedResult encode_binary_to_header(const std::string& stem, const std:
 	};
 }
 
-static bool process_file(const fs::path& path) {
-	std::ifstream f(path, std::ios::binary | std::ios::ate);
+static bool process_file(const fs::path& input_path, const fs::path& explicit_output_path = "") {
+	std::ifstream f(input_path, std::ios::binary | std::ios::ate);
 	if (!f.is_open()) {
-		std::cerr << std::format("[-] Failed to open: {}\n", path.string());
+		std::cerr << std::format("[-] Failed to open: {}\n", input_path.string());
 		return false;
 	}
 
 	const auto file_size = f.tellg();
 	if (file_size <= 0) {
-		std::cerr << std::format("[-] Invalid or empty file: {}\n", path.string());
+		std::cerr << std::format("[-] Invalid or empty file: {}\n", input_path.string());
 		return false;
 	}
 
@@ -87,8 +87,20 @@ static bool process_file(const fs::path& path) {
 	f.read(reinterpret_cast<char*>(data.data()), data.size());
 	f.close();
 
-	const auto encoded = encode_binary_to_header(path.stem().string(), path.extension().string(), data);
-	const fs::path out_path = path.parent_path() / encoded.output_filename;
+	const auto encoded = encode_binary_to_header(input_path.stem().string(), input_path.extension().string(), data);
+
+	fs::path out_path;
+	if (explicit_output_path.empty()) {
+		out_path = input_path.parent_path() / encoded.output_filename;
+	} else if (fs::is_directory(explicit_output_path)) {
+		out_path = explicit_output_path / encoded.output_filename;
+	} else {
+		out_path = explicit_output_path;
+	}
+
+	if (out_path.has_parent_path()) {
+		fs::create_directories(out_path.parent_path());
+	}
 
 	std::ofstream out(out_path, std::ios::trunc);
 	if (out.is_open()) {
@@ -109,7 +121,6 @@ TEST_CASE("encode_binary_to_header: 4-byte aligned payload") {
 	CHECK(res.output_filename == "test_sys_bin.h");
 	CHECK(res.header_content.find("inline constexpr unsigned int TEST_SYS_SIZE = 4;") != std::string::npos);
 	CHECK(res.header_content.find("inline constexpr unsigned int TEST_SYS_DATA[1] = {") != std::string::npos);
-	// 0x04030201 ^ 0xFFFFFFFF = 0xfbfcfe0e -> 0x01->0xfe, 0x02->0xfd, 0x03->0xfc, 0x04->0xfb = 0xfcfdfe01? no: 0xfbfcfdfe
 	CHECK(res.header_content.find("0xfbfcfdfe") != std::string::npos);
 }
 
@@ -159,11 +170,17 @@ int main(int argc, char* argv[]) {
 		return test_res;
 	}
 
-	// Filter out doctest flags to allow processing regular files
-	std::vector<char*> file_args;
+	std::vector<std::string> file_args;
+	fs::path explicit_output;
+
 	for (int i = 1; i < argc; i++) {
-		if (argv[i][0] != '-') {
-			file_args.push_back(argv[i]);
+		std::string arg = argv[i];
+		if (arg == "-o" || arg == "--output") {
+			if (i + 1 < argc) {
+				explicit_output = argv[++i];
+			}
+		} else if (!arg.starts_with('-')) {
+			file_args.push_back(arg);
 		}
 	}
 
@@ -171,13 +188,15 @@ int main(int argc, char* argv[]) {
 		if (test_res != 0) {
 			return test_res;
 		}
-		std::cout << "Usage: enc_dec [options] <file1> [file2 ...]\n";
-		std::cout << "Run tests: enc_dec --test or enc_dec -dt\n";
+		std::cout << "Usage: bin2header [options] <file1> [file2 ...]\n";
+		std::cout << "Options:\n";
+		std::cout << "  -o, --output <path>    Specify output file or directory\n";
+		std::cout << "  --test, -dt            Run built-in test suite\n";
 		return 0;
 	}
 
-	for (const auto* path_str : file_args) {
-		process_file(path_str);
+	for (const auto& path_str : file_args) {
+		process_file(path_str, explicit_output);
 	}
 
 	return test_res;

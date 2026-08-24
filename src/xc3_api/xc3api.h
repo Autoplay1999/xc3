@@ -1,8 +1,8 @@
 #pragma once
 #pragma comment(lib, "ntdll.lib")
 
-#ifndef XHUNTER_API_H
-#define XHUNTER_API_H
+#ifndef XC3_API_H
+#define XC3_API_H
 
 #include <Windows.h>
 #include <stdint.h>
@@ -17,7 +17,7 @@
 
 #include "error.hpp"
 
-namespace xhunterapi
+namespace xc3api
 {
 	enum class PidFlag : uint32_t {
 		Allow = 1,
@@ -144,16 +144,14 @@ namespace xhunterapi
 
 #pragma pack(pop)
 
-	// Replaced by xhunter::Result
-
-	class XHunterClient {
+	class XC3Client {
 	public:
-		XHunterClient();
-		~XHunterClient();
+		XC3Client();
+		~XC3Client();
 
 		// Prevent copying
-		XHunterClient(const XHunterClient&) = delete;
-		XHunterClient& operator=(const XHunterClient&) = delete;
+		XC3Client(const XC3Client&) = delete;
+		XC3Client& operator=(const XC3Client&) = delete;
 
 		// Connection / Lifecycle Methods
 		bool Connect(std::filesystem::path driverPath = "%windir%\\nirvana.sys", bool exportDriver = true) noexcept;
@@ -162,16 +160,16 @@ namespace xhunterapi
 		int GetLastError() const noexcept;
 
 		// API Methods
-		xhunter::Result<HANDLE> OpenProcess(DWORD dwProcessId, DWORD dwDesiredAccess) noexcept;
-		xhunter::Result<void> StartHandleHook() noexcept;
-		xhunter::Result<void> StopHandleHook() noexcept;
-		xhunter::Result<void> RegisterPid(DWORD dwPid, PidFlag flag) noexcept;
-		xhunter::Result<void> UnregisterPid(DWORD dwPid) noexcept;
-		xhunter::Result<DWORD> GetProtectedProcessFlag(DWORD dwPid) noexcept;
-		xhunter::Result<void> RegisterReportReader() noexcept;
-		xhunter::Result<void> AuthenticateCaller() noexcept;
-		xhunter::Result<void> ReadKernelMemory(uint64_t srcKernelVa, void* dstUserVa, uint32_t size) noexcept;
-		xhunter::Result<void> ReadProcessMemory(HANDLE hProcess, uint64_t srcUserVa, void* dstUserVa, uint32_t size) noexcept;
+		xc3::Result<HANDLE> OpenProcess(DWORD dwProcessId, DWORD dwDesiredAccess) noexcept;
+		xc3::Result<void> StartHandleHook() noexcept;
+		xc3::Result<void> StopHandleHook() noexcept;
+		xc3::Result<void> RegisterPid(DWORD dwPid, PidFlag flag) noexcept;
+		xc3::Result<void> UnregisterPid(DWORD dwPid) noexcept;
+		xc3::Result<DWORD> GetProtectedProcessFlag(DWORD dwPid) noexcept;
+		xc3::Result<void> RegisterReportReader() noexcept;
+		xc3::Result<void> AuthenticateCaller() noexcept;
+		xc3::Result<void> ReadKernelMemory(uint64_t srcKernelVa, void* dstUserVa, uint32_t size) noexcept;
+		xc3::Result<void> ReadProcessMemory(HANDLE hProcess, uint64_t srcUserVa, void* dstUserVa, uint32_t size) noexcept;
 
 	private:
 		HANDLE m_hDriver;

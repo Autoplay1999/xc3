@@ -15,7 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="xhunterapi.h">
+    <ClInclude Include="xc3api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="error.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="xhunter1_sys_bin.h">
@@ -26,7 +29,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="xhunterapi.cpp">
+    <ClCompile Include="xc3api.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

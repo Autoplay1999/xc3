@@ -1,6 +1,6 @@
 #pragma once
-#ifndef XHUNTER_ERROR_HPP
-#define XHUNTER_ERROR_HPP
+#ifndef XC3_ERROR_HPP
+#define XC3_ERROR_HPP
 
 #include <phnt_windows.h>
 #include <phnt.h>
@@ -9,7 +9,7 @@
 #include <source_location>
 #include <expected>
 
-namespace xhunter {
+namespace xc3 {
 
     inline std::string NTStatusToString(NTSTATUS status) {
         LPSTR messageBuffer = nullptr;
@@ -82,10 +82,10 @@ namespace xhunter {
     };
 }
 
-#define X_FAIL(status, msg) return std::unexpected(xhunter::Error(status, msg))
-#define X_FAIL_MSG(msg) return std::unexpected(xhunter::Error(msg))
+#define X_FAIL(status, msg) return std::unexpected(xc3::Error(status, msg))
+#define X_FAIL_MSG(msg) return std::unexpected(xc3::Error(msg))
 
 #define X_BAIL_IF(cond, status, msg) \
-    if ((cond)) { return std::unexpected(xhunter::Error(status, msg)); }
+    if ((cond)) { return std::unexpected(xc3::Error(status, msg)); }
 
 #endif

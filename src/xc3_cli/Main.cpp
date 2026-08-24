@@ -10,12 +10,12 @@
 #include <TlHelp32.h>
 #include <iostream>
 
-#include "../xhunter_sdk_lib/xhunterapi.h"
+#include "../xc3_api/xc3api.h"
 
 #pragma comment(lib, "ntdll")
 #pragma comment(lib, "Bcrypt.lib")
 
-using namespace xhunterapi;
+using namespace xc3api;
 
 typedef struct _PUBLIC_OBJECT_BASIC_INFORMATION {
 	ULONG       Attributes;
@@ -91,9 +91,9 @@ bool AssignDebugPrivileges()
 
 int main()
 {
-	SetConsoleTitleA("Xigncode SDK");
+	SetConsoleTitleA("XC3 CLI");
 
-	XHunterClient client;
+	XC3Client client;
 
 	if (!client.Connect())
 	{

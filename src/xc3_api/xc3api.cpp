@@ -9,39 +9,39 @@
 #include <span>
 
 #include <xorstr.hpp>
-#include <vmp/VMProtectSDK.h>
-#include <nirvana/std_format_ext.h>
+#include <VMProtectSDK.h>
+#include <std_format_ext.h>
 
 #include "util.hpp"
 
-#include "xhunterapi.h"
+#include "xc3api.h"
 #include "xhunter1_sys_bin.h"
 
 #pragma auto_inline(off)
 
-namespace xhunterapi {
+namespace xc3api {
 
 	typedef UINT(WINAPI* GETSYSTEMWOW64DIRECTORY)(LPTSTR, UINT);
 
-	XHunterClient::XHunterClient() 
-		: m_hDriver(INVALID_HANDLE_VALUE), 
-		  m_lastError(0), 
+	XC3Client::XC3Client()
+		: m_hDriver(INVALID_HANDLE_VALUE),
+		  m_lastError(0),
 		  m_selfRun(false) {
 	}
 
-	XHunterClient::~XHunterClient() {
+	XC3Client::~XC3Client() {
 		Disconnect();
 	}
 
-	int XHunterClient::GetLastError() const noexcept {
+	int XC3Client::GetLastError() const noexcept {
 		return m_lastError;
 	}
 
-	bool XHunterClient::IsRunning() const noexcept {
+	bool XC3Client::IsRunning() const noexcept {
 		return util::is_service_running(m_serviceName);
 	}
 
-	void XHunterClient::Disconnect() noexcept {
+	void XC3Client::Disconnect() noexcept {
 		if (m_hDriver != INVALID_HANDLE_VALUE) {
 			CloseHandle(m_hDriver);
 			m_hDriver = INVALID_HANDLE_VALUE;
@@ -53,7 +53,7 @@ namespace xhunterapi {
 		}
 	}
 
-	bool XHunterClient::Connect(std::filesystem::path driverPath, bool exportDriver) noexcept {
+	bool XC3Client::Connect(std::filesystem::path driverPath, bool exportDriver) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 
 		if (m_hDriver != INVALID_HANDLE_VALUE) {
@@ -69,7 +69,7 @@ namespace xhunterapi {
 		}
 
 		driverPath = std::filesystem::absolute(driverPath);
-		
+
 		m_serviceName = driverPath.stem().wstring();
 		m_driverPath = std::wstring(XSW("\\??\\")) + driverPath.wstring();
 
@@ -163,7 +163,7 @@ namespace xhunterapi {
 
 
 
-	bool XHunterClient::ExportDriver(const std::wstring& path) const noexcept {
+	bool XC3Client::ExportDriver(const std::wstring& path) const noexcept {
 		std::ofstream f(path, std::ios::binary);
 
 		if (!f.is_open()) {
@@ -182,9 +182,9 @@ namespace xhunterapi {
 		return true;
 	}
 
-	std::unique_ptr<xhunter1_common_res> XHunterClient::SendPacket(Opcode opcode, const void* body, size_t body_len) noexcept {
+	std::unique_ptr<xhunter1_common_res> XC3Client::SendPacket(Opcode opcode, const void* body, size_t body_len) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
-		
+
 		if (m_hDriver == INVALID_HANDLE_VALUE || body_len > (sizeof(((xhunter1_req*)NULL)->body))) {
 			return nullptr;
 		}
@@ -224,7 +224,7 @@ namespace xhunterapi {
 		return res;
 	}
 
-	xhunter::Result<HANDLE> XHunterClient::OpenProcess(DWORD dwProcessId, DWORD dwDesiredAccess) noexcept {
+	xc3::Result<HANDLE> XC3Client::OpenProcess(DWORD dwProcessId, DWORD dwDesiredAccess) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_handle_req handle_req = { 0 };
 		handle_req.dwProcessId = dwProcessId;
@@ -245,7 +245,7 @@ namespace xhunterapi {
 		return out;
 	}
 
-	xhunter::Result<void> XHunterClient::StartHandleHook() noexcept {
+	xc3::Result<void> XC3Client::StartHandleHook() noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_sethookstate hookstate_req = { 0 };
 		hookstate_req.byHookState = 1;
@@ -258,12 +258,12 @@ namespace xhunterapi {
 		if (res_packet->dwStatus != STATUS_SUCCESS) {
 			X_FAIL(res_packet->dwStatus, XSA("Driver rejected StartHandleHook request"));
 		}
-		
+
 		VMP_END();
 		return {};
 	}
 
-	xhunter::Result<void> XHunterClient::StopHandleHook() noexcept {
+	xc3::Result<void> XC3Client::StopHandleHook() noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_sethookstate hookstate_req = { 0 };
 		hookstate_req.byHookState = 0;
@@ -276,12 +276,12 @@ namespace xhunterapi {
 		if (res_packet->dwStatus != STATUS_SUCCESS) {
 			X_FAIL(res_packet->dwStatus, XSA("Driver rejected StopHandleHook request"));
 		}
-		
+
 		VMP_END();
 		return {};
 	}
 
-	xhunter::Result<void> XHunterClient::RegisterPid(DWORD dwPid, PidFlag flag) noexcept {
+	xc3::Result<void> XC3Client::RegisterPid(DWORD dwPid, PidFlag flag) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 
 		PIDMAP_PARAM pidmap_req = { 0 };
@@ -301,7 +301,7 @@ namespace xhunterapi {
 		return {};
 	}
 
-	xhunter::Result<void> XHunterClient::UnregisterPid(DWORD dwPid) noexcept {
+	xc3::Result<void> XC3Client::UnregisterPid(DWORD dwPid) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		PIDREMOVE_PARAM pidremove_req = { 0 };
 		pidremove_req.pid = dwPid;
@@ -319,7 +319,7 @@ namespace xhunterapi {
 		return {};
 	}
 
-	xhunter::Result<DWORD> XHunterClient::GetProtectedProcessFlag(DWORD dwPid) noexcept {
+	xc3::Result<DWORD> XC3Client::GetProtectedProcessFlag(DWORD dwPid) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		xhunter1_proc_GetProcessProtectFlag_req protect_req = { 0 };
 		protect_req.pid = dwPid;
@@ -339,7 +339,7 @@ namespace xhunterapi {
 		return out;
 	}
 
-	xhunter::Result<void> XHunterClient::RegisterReportReader() noexcept {
+	xc3::Result<void> XC3Client::RegisterReportReader() noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		//dummy var, xhunter not read it
 		xhunter1_proc_GetProcessProtectFlag_req protect_req = { 0 };
@@ -358,7 +358,7 @@ namespace xhunterapi {
 		return {};
 	}
 
-	xhunter::Result<void> XHunterClient::AuthenticateCaller() noexcept {
+	xc3::Result<void> XC3Client::AuthenticateCaller() noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		auto res_reg = RegisterReportReader();
 		if (!res_reg) {
@@ -375,7 +375,7 @@ namespace xhunterapi {
 		return {};
 	}
 
-	xhunter::Result<void> XHunterClient::ReadKernelMemory(uint64_t srcKernelVa, void* dstUserVa, uint32_t size) noexcept {
+	xc3::Result<void> XC3Client::ReadKernelMemory(uint64_t srcKernelVa, void* dstUserVa, uint32_t size) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		if (!dstUserVa || !size) {
 			X_FAIL_MSG(XSA("Invalid arguments for ReadKernelMemory"));
@@ -399,7 +399,7 @@ namespace xhunterapi {
 		return {};
 	}
 
-	xhunter::Result<void> XHunterClient::ReadProcessMemory(HANDLE hProcess, uint64_t srcUserVa, void* dstUserVa, uint32_t size) noexcept {
+	xc3::Result<void> XC3Client::ReadProcessMemory(HANDLE hProcess, uint64_t srcUserVa, void* dstUserVa, uint32_t size) noexcept {
 		VMP_BEGIN_MUTATION(__FUNCTION__);
 		if (!hProcess || !dstUserVa || !size) {
 			X_FAIL_MSG(XSA("Invalid arguments for ReadProcessMemory"));

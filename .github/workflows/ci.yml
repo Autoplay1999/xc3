@@ -39,24 +39,83 @@ jobs:
 
       - name: Run Tests
         run: |
-          .\bin\${{ matrix.config }}\enc_dec.exe --test
+          .\bin\${{ matrix.config }}\bin2header.exe --test
 
       - name: Prepare Artifacts Directory
         shell: pwsh
         run: |
+          $arch = if ("${{ matrix.platform }}" -eq "Win32") { "x86" } else { "x64" }
+          $cfg = "${{ matrix.config }}".ToLower()
+
           New-Item -ItemType Directory -Force -Path "artifacts\lib" | Out-Null
           New-Item -ItemType Directory -Force -Path "artifacts\bin" | Out-Null
-          New-Item -ItemType Directory -Force -Path "artifacts\include" | Out-Null
+          New-Item -ItemType Directory -Force -Path "artifacts\include\xc3" | Out-Null
 
-          Copy-Item -Path "bin\${{ matrix.config }}\*.lib" -Destination "artifacts\lib" -ErrorAction SilentlyContinue
-          Copy-Item -Path "bin\${{ matrix.config }}\*.exe" -Destination "artifacts\bin" -ErrorAction SilentlyContinue
-          Copy-Item -Path "bin\${{ matrix.config }}\*.pdb" -Destination "artifacts\bin" -ErrorAction SilentlyContinue
-          Copy-Item -Path "xhunter_sdk_lib\*.h" -Destination "artifacts\include" -ErrorAction SilentlyContinue
-          Copy-Item -Path "xhunter_sdk_lib\*.hpp" -Destination "artifacts\include" -ErrorAction SilentlyContinue
+          # Copy and rename library to xc3api_<arch>_<config>.lib
+          if (Test-Path "bin\${{ matrix.config }}\xc3_api.lib") {
+            Copy-Item -Path "bin\${{ matrix.config }}\xc3_api.lib" -Destination "artifacts\lib\xc3api_${arch}_${cfg}.lib"
+          }
+
+          # Copy binaries with arch/config suffix
+          if (Test-Path "bin\${{ matrix.config }}\xc3_cli.exe") {
+            Copy-Item -Path "bin\${{ matrix.config }}\xc3_cli.exe" -Destination "artifacts\bin\xc3_cli_${arch}_${cfg}.exe"
+          }
+          if (Test-Path "bin\${{ matrix.config }}\xc3_cli.pdb") {
+            Copy-Item -Path "bin\${{ matrix.config }}\xc3_cli.pdb" -Destination "artifacts\bin\xc3_cli_${arch}_${cfg}.pdb"
+          }
+          if (Test-Path "bin\${{ matrix.config }}\bin2header.exe") {
+            Copy-Item -Path "bin\${{ matrix.config }}\bin2header.exe" -Destination "artifacts\bin\bin2header_${arch}_${cfg}.exe"
+          }
+          if (Test-Path "bin\${{ matrix.config }}\bin2header.pdb") {
+            Copy-Item -Path "bin\${{ matrix.config }}\bin2header.pdb" -Destination "artifacts\bin\bin2header_${arch}_${cfg}.pdb"
+          }
+
+          # Copy public headers
+          Copy-Item -Path "src\xc3_api\xc3api.h" -Destination "artifacts\include\xc3\" -ErrorAction SilentlyContinue
+          Copy-Item -Path "src\xc3_api\error.hpp" -Destination "artifacts\include\xc3\" -ErrorAction SilentlyContinue
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: xhunter_sdk-${{ matrix.platform }}-${{ matrix.config }}
+          name: xc3-${{ matrix.platform }}-${{ matrix.config }}
           path: artifacts/
+          if-no-files-found: error
+
+  package:
+    name: Package SDK Bundle
+    needs: build
+    runs-on: windows-latest
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded_artifacts
+
+      - name: Assemble Unified Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "package\include\xc3" | Out-Null
+          New-Item -ItemType Directory -Force -Path "package\lib" | Out-Null
+          New-Item -ItemType Directory -Force -Path "package\bin" | Out-Null
+
+          # Copy headers
+          Get-ChildItem -Path "downloaded_artifacts\*\include\xc3\*" | Copy-Item -Destination "package\include\xc3" -Force
+
+          # Copy all libraries (xc3api_<arch>_<config>.lib)
+          Get-ChildItem -Path "downloaded_artifacts\*\lib\*" | Copy-Item -Destination "package\lib" -Force
+
+          # Copy only x64 Release binaries as xc3_cli.exe and bin2header.exe
+          if (Test-Path "downloaded_artifacts\xc3-x64-Release\bin\xc3_cli_x64_release.exe") {
+            Copy-Item -Path "downloaded_artifacts\xc3-x64-Release\bin\xc3_cli_x64_release.exe" -Destination "package\bin\xc3_cli.exe" -Force
+          }
+          if (Test-Path "downloaded_artifacts\xc3-x64-Release\bin\bin2header_x64_release.exe") {
+            Copy-Item -Path "downloaded_artifacts\xc3-x64-Release\bin\bin2header_x64_release.exe" -Destination "package\bin\bin2header.exe" -Force
+          }
+
+      - name: Upload Unified Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: xc3-package
+          path: package/
           if-no-files-found: error

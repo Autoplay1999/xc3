@@ -3,14 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xhunter_sdk", "xhunter_sdk\xhunter_sdk.vcxproj", "{6F49102B-74C4-4EBE-9239-100B3EA63641}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xc3_cli", "src\xc3_cli\xc3_cli.vcxproj", "{6F49102B-74C4-4EBE-9239-100B3EA63641}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C5EEE4DA-83D9-4A2C-9E7A-C1A5956350EE} = {C5EEE4DA-83D9-4A2C-9E7A-C1A5956350EE}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "enc_dec", "enc_dec\enc_dec.vcxproj", "{747AA3D1-967C-442F-99E1-85DFA26198BA}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bin2header", "src\tools\bin2header\bin2header.vcxproj", "{747AA3D1-967C-442F-99E1-85DFA26198BA}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xhunter_sdk_lib", "xhunter_sdk_lib\xhunter_sdk_lib.vcxproj", "{C5EEE4DA-83D9-4A2C-9E7A-C1A5956350EE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xc3_api", "src\xc3_api\xc3_api.vcxproj", "{C5EEE4DA-83D9-4A2C-9E7A-C1A5956350EE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

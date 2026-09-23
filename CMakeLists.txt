@@ -97,3 +97,24 @@ target_include_directories(xc3_cli PRIVATE
 target_link_libraries(xc3_cli PRIVATE
     xc3_api
 )
+
+# ------------------------------------------------------------------------------
+# 4. Target: test_lifecycle (Integration test for service lifecycle)
+# ------------------------------------------------------------------------------
+add_executable(test_lifecycle
+    tests/test_lifecycle.cpp
+)
+
+target_include_directories(test_lifecycle PRIVATE
+    ${PHNT_INCLUDE_DIR}
+    ${XORSTR_INCLUDE_DIR}
+    ${NIRVANA_INCLUDE_DIR}
+    ${VMP_INCLUDE_DIR}
+    ${SCOPE_GUARD_INCLUDE_DIR}
+    ${MAGIC_ENUM_INCLUDE_DIR}
+    ${DEPS_DIR}
+)
+
+target_link_libraries(test_lifecycle PRIVATE
+    xc3_api
+)

@@ -73,27 +73,20 @@ namespace xc3api {
 		m_serviceName = driverPath.stem().wstring();
 		m_driverPath = std::wstring(XSW("\\??\\")) + driverPath.wstring();
 
-		if (!exportDriver) {
-			m_selfRun = false;
-			std::wstring devName = std::format_(XSW("\\\\.\\{}"), m_serviceName);
-			m_hDriver = CreateFileW(devName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-			if (m_hDriver == INVALID_HANDLE_VALUE) {
-				m_lastError = GetLastError();
-				return false;
+		if (!util::service_exists(m_serviceName)) {
+			if (!exportDriver) {
+				if (!std::filesystem::exists(driverPath)) {
+					m_lastError = ERROR_FILE_NOT_FOUND;
+					return false;
+				}
 			}
 
-			VMP_END();
-			return true;
-		}
-
-		if (!util::service_exists(m_serviceName)) {
 			if (!util::create_service_entry(m_serviceName, m_serviceName, m_driverPath)) {
 				m_lastError = 1;
 				return false;
 			}
 
-			if (!ExportDriver(driverPath.wstring())) {
+			if (exportDriver && !ExportDriver(driverPath.wstring())) {
 				m_lastError = 2;
 				return false;
 			}
@@ -106,37 +99,32 @@ namespace xc3api {
 			m_selfRun = true;
 		} else {
 			if (!util::is_service_running(m_serviceName)) {
-				std::ifstream f(driverPath.wstring(), std::ios::binary);
+				if (exportDriver) {
+					std::ifstream f(driverPath.wstring(), std::ios::binary);
 
-				while (!f.is_open()) {
-					if (!ExportDriver(driverPath.wstring())) {
-						m_lastError = 5;
-						return false;
-					}
+					if (!f.is_open()) {
+						if (!ExportDriver(driverPath.wstring())) {
+							m_lastError = 5;
+							return false;
+						}
+					} else {
+						std::string xhunter_data;
+						f.seekg(0, std::ios::end);
+						xhunter_data.resize((size_t)f.tellg());
+						f.seekg(0, std::ios::beg);
+						f.read(&xhunter_data[0], xhunter_data.size());
+						f.close();
 
-					if (!util::start_service_entry(m_serviceName)) {
-						m_lastError = 7;
-						return false;
-					}
+						auto sum_hex = util::crypto::sha512_hex(std::as_bytes(std::span(xhunter_data)));
 
-					break;
-				}
+						if (sum_hex != XSA("596d8a02a4dfbb0e71a985a8ef2b01242762bb518b60b0f23f83f1ac15dbf2619b1a1e8c93316e06f25ac989469aa3f5f5edfbdf2c4979394e68b6ab9d726d65")) {
+							std::filesystem::remove(driverPath);
 
-				std::string xhunter_data;
-				f.seekg(0, std::ios::end);
-				xhunter_data.resize((size_t)f.tellg());
-				f.seekg(0, std::ios::beg);
-				f.read(&xhunter_data[0], xhunter_data.size());
-				f.close();
-
-				auto sum_hex = util::crypto::sha512_hex(std::as_bytes(std::span(xhunter_data)));
-
-				if (sum_hex != XSA("596d8a02a4dfbb0e71a985a8ef2b01242762bb518b60b0f23f83f1ac15dbf2619b1a1e8c93316e06f25ac989469aa3f5f5edfbdf2c4979394e68b6ab9d726d65")) {
-					std::filesystem::remove(driverPath);
-
-					if (!ExportDriver(driverPath.wstring())) {
-						m_lastError = 5;
-						return false;
+							if (!ExportDriver(driverPath.wstring())) {
+								m_lastError = 5;
+								return false;
+							}
+						}
 					}
 				}
 
@@ -146,6 +134,8 @@ namespace xc3api {
 				}
 
 				m_selfRun = true;
+			} else {
+				m_selfRun = false;
 			}
 		}
 
@@ -154,6 +144,10 @@ namespace xc3api {
 
 		if (m_hDriver == INVALID_HANDLE_VALUE) {
 			m_lastError = GetLastError();
+			if (m_selfRun) {
+				util::stop_service_entry(m_serviceName);
+				m_selfRun = false;
+			}
 			return false;
 		}
 
